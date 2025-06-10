@@ -7,7 +7,7 @@
 ## Installation
 
 ```commandline
-pip install powerchord
+pip install chromator
 ```
 
 ## Usage
