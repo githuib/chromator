@@ -4,12 +4,7 @@ import sys
 from hsluv import hex_to_hsluv, hsluv_to_hex
 from yachalk import chalk
 
-from .colors import HSLuv, shades
-
-
-def contrasting_color(color: HSLuv) -> HSLuv:
-    hue, saturation, lightness = color
-    return hue, saturation, (lightness + 50) % 100
+from .colors import HSLuv, contrasting_color, shades
 
 
 def colored(color: HSLuv, s: str = None):
@@ -27,37 +22,6 @@ def css_color_comment(color: HSLuv):
 - Lightness: {lightness:.1f}%"""
 
 
-def print_shades_css(
-        label: str,
-        hex_1: str,
-        hex_2: str = None,
-        step: int = 5,
-        extrapolate: float = 0,
-) -> None:
-    color_1 = hex_to_hsluv(f"#{hex_1}")
-
-    if hex_2:
-        color_2 = hex_to_hsluv(f"#{hex_2}")
-        sys.stdout.write(f"""/*
-Based on:
-{css_color_comment(color_1)}
-{css_color_comment(color_2)}
-*/
-""")
-
-    else:
-        color_2 = None
-        sys.stdout.write(f"""/*
-Based on:
-{css_color_comment(color_1)}
-*/
-""")
-
-    for h, s, i in shades(color_1, color_2, step, extrapolate / 100):
-        color_var = f"--{label}-{i:03d}: {hsluv_to_hex((h, s, i))};\n"
-        sys.stdout.write(colored((h, s, i), color_var))
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("label", type=str)
@@ -65,5 +29,28 @@ def main() -> None:
     parser.add_argument("-k", "--color2", type=str, default=None)
     parser.add_argument("-s", "--step", type=int, default=5)
     parser.add_argument("-e", "--extrapolate", type=int, default=0)
+    parser.add_argument("-i", "--inclusive", action="store_true", default=False)
     args = parser.parse_args()
-    print_shades_css(args.label, args.color1, args.color2, args.step, args.extrapolate)
+
+    c_1 = hex_to_hsluv(f"#{args.color1}")
+
+    if args.color2:
+        c_2 = hex_to_hsluv(f"#{args.color2}")
+        sys.stdout.write(f"""/*
+Based on:
+{css_color_comment(c_1)}
+{css_color_comment(c_2)}
+*/
+""")
+
+    else:
+        c_2 = None
+        sys.stdout.write(f"""/*
+Based on:
+{css_color_comment(c_1)}
+*/
+""")
+
+    for h, s, i in shades(c_1, c_2, args.step, args.extrapolate / 100, args.inclusive):
+        color_var = f"--{args.label}-{i:03d}: {hsluv_to_hex((h, s, i))};\n"
+        sys.stdout.write(colored((h, s, i), color_var))
