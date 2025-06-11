@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "chromator"
-version = "0.3.0"
+version = "0.3.1"
 description = "Color shades generator"
 authors = ["Huib Piguillet <huib@proton.me>"]
 maintainers = ["Huib Piguillet"]
@@ -17,7 +17,7 @@ keywords = ["color shades generator", "cli utility"]
 classifiers = ["Topic :: Utilities"]
 
 [tool.poetry.scripts]
-shades = "chromator.cli:main"
+css-shades = "chromator.cli:css_shade_vars"
 
 [tool.poetry.dependencies]
 python = "^3.13"

@@ -1,3 +1,3 @@
-from .cli import main
+from .cli import css_shade_vars
 
-main()
+css_shade_vars()
