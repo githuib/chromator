@@ -43,14 +43,17 @@ def shades_2(
         extrapolate: float = 0,
         inclusive: bool = False,
 ) -> Iterator[HSLuv]:
+    _, _, l_1 = color_1
+    _, _, l_2 = color_2
+    if l_1 > l_2:
+        color_1, color_2 = color_2, color_1
     h_1, s_1, l_1 = color_1
     h_2, s_2, l_2 = color_2
-    l_1_extra = interpolate_numbers(l_1, 0, extrapolate)
-    l_2_extra = interpolate_numbers(l_2, 100, extrapolate)
-    l_diff = l_2_extra - l_1_extra
+    l_1 = interpolate_numbers(l_1, 0, extrapolate)
+    l_2 = interpolate_numbers(l_2, 100, extrapolate)
     s = step if inclusive else 0
     for lightness in range(step - s, 100 + s, step):
-        f = cap_between((lightness - l_1_extra) / l_diff, 0.0, 1.0)
+        f = cap_between((lightness - l_1) / (l_2 - l_1), 0.0, 1.0)
         hue = interpolate_angles(h_1, h_2, f)
         saturation = interpolate_numbers(s_1, s_2, f)
         yield hue, saturation, lightness

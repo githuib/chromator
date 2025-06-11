@@ -52,5 +52,5 @@ Based on:
 """)
 
     for h, s, i in shades(c_1, c_2, args.step, args.extrapolate / 100, args.inclusive):
-        color_var = f"--{args.label}-{i:03d}: {hsluv_to_hex((h, s, i))};\n"
+        color_var = f"--{args.label}-{i:02d}: {hsluv_to_hex((h, s, i))};\n"
         sys.stdout.write(colored((h, s, i), color_var))
