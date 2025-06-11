@@ -22,7 +22,7 @@ def css_color_comment(color: HSLuv):
 - Lightness: {lightness:.1f}%"""
 
 
-def css_shade_vars() -> None:
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("label", type=str)
     parser.add_argument("-c", "--color1", type=str)

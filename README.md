@@ -15,7 +15,7 @@ pip install chromator
 ### General help
 
 ```commandline
-$ poetry run css-shades -h 
+$ chromator -h 
 usage: css-shades [-h] [-c COLOR1] [-k COLOR2] [-s STEP] [-e EXTRAPOLATE] [-i] label
 
 positional arguments:
@@ -33,7 +33,7 @@ options:
 ### Shades as CSS variables, based on one input color:
 
 ```commandline
-$ poetry run css-shades bad-ass -c bada55 -s 10 
+$ chromator bad-ass -c bada55 -s 10 
 /*
 Based on:
 
@@ -56,7 +56,7 @@ Based on:
 ### Shades as CSS variables, based on two input colors:
 
 ```commandline
-$ poetry run css-shades worse-ass -c bada55 -k b000b5 -s 10 -e 50 
+$ chromator worse-ass -c bada55 -k b000b5 -s 10 -e 50 
 /*
 Based on:
 
