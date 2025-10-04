@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "chromator"
-version = "0.4.2"
+version = "0.4.3"
 description = "Color shades generator"
 authors = ["Huib Piguillet <huib@proton.me>"]
 maintainers = ["Huib Piguillet"]
@@ -113,6 +113,7 @@ select = [
     "RUF", # Ruff-specific rules
 ]
 ignore = [
+    "COM812", # The following rule may cause conflicts when used with the formatter: `COM812`.
     "RUF013", # PEP 484 prohibits implicit `Optional`
     "G004",  # Logging statement uses f-string
 #    "TRY003", # Avoid specifying long messages outside the exception class

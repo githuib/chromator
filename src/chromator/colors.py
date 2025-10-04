@@ -1,4 +1,3 @@
-from abc import ABC
 from collections.abc import Iterator
 from dataclasses import dataclass
 from functools import cached_property
@@ -12,7 +11,7 @@ def trim(n: float, lower: float, upper: float):
 
 
 @dataclass
-class Bounds(ABC):
+class Bounds:
     lower: float
     upper: float
 
@@ -48,7 +47,7 @@ class CyclicBounds(Bounds):
         return super().interpolate(f) % self.period
 
     def inverse_interpolate(self, n: float, inside=True):
-        return super().inverse_interpolate(n % self.period, inside )
+        return super().inverse_interpolate(n % self.period, inside)
 
 
 def contrasting_color(color: HSLuv) -> HSLuv:
@@ -57,9 +56,9 @@ def contrasting_color(color: HSLuv) -> HSLuv:
 
 
 def shades_1(
-        color: HSLuv,
-        step: int = 5,
-        inclusive: bool = False,
+    color: HSLuv,
+    step: int = 5,
+    inclusive: bool = False,
 ) -> Iterator[HSLuv]:
     hue, saturation, _ = color
     s = step if inclusive else 0
@@ -68,11 +67,11 @@ def shades_1(
 
 
 def shades_2(
-        color_1: HSLuv,
-        color_2: HSLuv,
-        step: int = 5,
-        extrapolate: float = 0,
-        inclusive: bool = False,
+    color_1: HSLuv,
+    color_2: HSLuv,
+    step: int = 5,
+    extrapolate: float = 0,
+    inclusive: bool = False,
 ) -> Iterator[HSLuv]:
     _, _, l_1 = color_1
     _, _, l_2 = color_2
@@ -97,11 +96,11 @@ def shades_2(
 
 
 def shades(
-        color_1: HSLuv,
-        color_2: HSLuv = None,
-        step: int = 5,
-        extrapolate: float = 0,
-        inclusive: bool = False,
+    color_1: HSLuv,
+    color_2: HSLuv = None,
+    step: int = 5,
+    extrapolate: float = 0,
+    inclusive: bool = False,
 ):
     if color_2:
         yield from shades_2(color_1, color_2, step, extrapolate, inclusive)
