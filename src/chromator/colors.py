@@ -1,28 +1,59 @@
+from abc import ABC
 from collections.abc import Iterator
+from dataclasses import dataclass
+from functools import cached_property
+from math import pi
 
 HSLuv = tuple[float, float, float]
+
+
+def trim(n: float, lower: float, upper: float):
+    return min(max(lower, n), upper)
+
+
+@dataclass
+class Bounds(ABC):
+    lower: float
+    upper: float
+
+    @cached_property
+    def span(self):
+        return self.upper - self.lower
+
+    def interpolate(self, f: float):
+        return self.lower + self.span * f
+
+    def inverse_interpolate(self, n: float, inside=True):
+        try:
+            f = (n - self.lower) / self.span
+        except ZeroDivisionError:
+            return 0.0
+        return trim(f, 0.0, 1.0) if inside else f
+
+
+class CyclicBounds(Bounds):
+    def __init__(self, lower: float, upper: float, period: float = pi * 2):
+        lower = lower % period
+        upper = upper % period
+        span = upper - lower
+        if span > period / 2:
+            lower += period
+        if span < -period / 2:
+            upper += period
+
+        super().__init__(lower, upper)
+        self.period = period
+
+    def interpolate(self, f: float):
+        return super().interpolate(f) % self.period
+
+    def inverse_interpolate(self, n: float, inside=True):
+        return super().inverse_interpolate(n % self.period, inside )
 
 
 def contrasting_color(color: HSLuv) -> HSLuv:
     hue, saturation, lightness = color
     return hue, saturation, (lightness + 50) % 100
-
-
-def interpolate_numbers(n_1: float, n_2: float, f: float):
-    return n_1 + (n_2 - n_1) * f
-
-
-FULL_CIRCLE = 360
-HALF_CIRCLE = FULL_CIRCLE // 2
-
-
-def interpolate_angles(a_1: float, a_2: float, f: float):
-    d = (a_2 - a_1) % FULL_CIRCLE
-    return (a_1 + (d if d < HALF_CIRCLE else d - FULL_CIRCLE) * f) % FULL_CIRCLE
-
-
-def cap_between(v: float, v_min: float, v_max: float):
-    return min(max(v_min, v), v_max)
 
 
 def shades_1(
@@ -49,13 +80,19 @@ def shades_2(
         color_1, color_2 = color_2, color_1
     h_1, s_1, l_1 = color_1
     h_2, s_2, l_2 = color_2
-    l_1 = interpolate_numbers(l_1, 0, extrapolate)
-    l_2 = interpolate_numbers(l_2, 100, extrapolate)
+
+    l_1 = Bounds(l_1, 0).interpolate(extrapolate)
+    l_2 = Bounds(l_2, 100).interpolate(extrapolate)
+
+    hue_bounds = CyclicBounds(h_1, h_2, 360)
+    saturation_bounds = Bounds(s_1, s_2)
+    lightness_bounds = Bounds(l_1, l_2)
+
     s = step if inclusive else 0
     for lightness in range(step - s, 100 + s, step):
-        f = cap_between((lightness - l_1) / (l_2 - l_1), 0.0, 1.0)
-        hue = interpolate_angles(h_1, h_2, f)
-        saturation = interpolate_numbers(s_1, s_2, f)
+        f = lightness_bounds.inverse_interpolate(lightness)
+        hue = hue_bounds.interpolate(f)
+        saturation = saturation_bounds.interpolate(f)
         yield hue, saturation, lightness
 
 
