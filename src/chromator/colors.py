@@ -50,13 +50,13 @@ class CyclicBounds(Bounds):
             begin += period if begin < end else -period
 
         super().__init__(begin, end)
-        self.period = period
+        self._period = period
 
     def interpolate(self, f: float):
-        return super().interpolate(f) % self.period
+        return super().interpolate(f) % self._period
 
     def inverse_interpolate(self, n: float, inside=True):
-        return super().inverse_interpolate(n % self.period, inside)
+        return super().inverse_interpolate(n % self._period, inside)
 
 
 def contrasting_color(color: HSLuv) -> HSLuv:
