@@ -5,8 +5,8 @@ from math import pi
 HSLuv = tuple[float, float, float]
 
 
-def trim(n: float, begin: float, end: float):
-    return min(max(begin, n), end)
+def trim(n: float, lower: float, upper: float):
+    return min(max(lower, n), upper)
 
 
 class Bounds:
