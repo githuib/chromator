@@ -1,46 +1,55 @@
 from collections.abc import Iterator
-from dataclasses import dataclass
 from functools import cached_property
 from math import pi
 
 HSLuv = tuple[float, float, float]
 
 
-def trim(n: float, lower: float, upper: float):
-    return min(max(lower, n), upper)
+def trim(n: float, begin: float, end: float):
+    return min(max(begin, n), end)
 
 
-@dataclass
 class Bounds:
-    lower: float
-    upper: float
+    def __init__(self, begin: float, end: float):
+        self._begin = begin
+        self._end = end
 
     @cached_property
-    def span(self):
-        return self.upper - self.lower
+    def _span(self):
+        return self._end - self._begin
 
     def interpolate(self, f: float):
-        return self.lower + self.span * f
+        return self._begin + self._span * f
 
     def inverse_interpolate(self, n: float, inside=True):
         try:
-            f = (n - self.lower) / self.span
+            f = (n - self._begin) / self._span
         except ZeroDivisionError:
             return 0.0
         return trim(f, 0.0, 1.0) if inside else f
 
 
 class CyclicBounds(Bounds):
-    def __init__(self, lower: float, upper: float, period: float = pi * 2):
-        lower = lower % period
-        upper = upper % period
-        span = upper - lower
-        if span > period / 2:
-            lower += period
-        if span < -period / 2:
-            upper += period
+    def __init__(self, begin: float, end: float, period: float = pi * 2):
+        begin, end = begin % period, end % period
 
-        super().__init__(lower, upper)
+        # To ensure interpolation over the smallest angle,
+        # phase shift {begin} over whole periods, such that the
+        # (absolute) difference between {begin} <-> {end} <= 1/2 {period}.
+        #
+        #                          v------ period ------v
+        #    -1                    0                    1                    2
+        #     |                    |                    |    begin < end:    |
+        # Old:|                    |   B ~~~~~~~~~> E   |                    |
+        # New:|                    |                E <~|~~ B'  = B + p      |
+        #     |    begin > end:    |                    |                    |
+        # Old:|                    |   E <~~~~~~~~~ B   |                    |
+        # New:|      B - p =   B'~~|~> E                |                    |
+
+        if abs(end - begin) > period / 2:
+            begin += period if begin < end else -period
+
+        super().__init__(begin, end)
         self.period = period
 
     def interpolate(self, f: float):
