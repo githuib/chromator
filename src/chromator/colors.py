@@ -39,12 +39,12 @@ class CyclicBounds(Bounds):
         #
         #                          v------ period ------v
         #    -1                    0                    1                    2
-        #     |                    |                    |    begin < end:    |
+        #     |                    |                    |     begin < end:   |
         # Old:|                    |   B ~~~~~~~~~> E   |                    |
-        # New:|                    |                E <~|~~ B'  = B + p      |
+        # New:|                    |                E <~|~~ B' = B + period  |
         #     |    begin > end:    |                    |                    |
         # Old:|                    |   E <~~~~~~~~~ B   |                    |
-        # New:|      B - p =   B'~~|~> E                |                    |
+        # New:|  B - period =  B'~~|~> E                |                    |
 
         if abs(end - begin) > period / 2:
             begin += period if begin < end else -period
