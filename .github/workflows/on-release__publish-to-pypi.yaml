@@ -8,11 +8,13 @@ jobs:
   publish-package:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
+    environment:
+      name: pypi
+      url: https://pypi.org/p/chromator
 
-    env:
-      POETRY_HOME: /opt/poetry
+    permissions:
+      contents: write  # to push version bump to git
+      id-token: write  # mandatory for Trusted Publishing
 
     steps:
       - uses: actions/checkout@v5
@@ -28,24 +30,18 @@ jobs:
           cache: poetry
 
       - name: Run QA checks
-        run: scripts/check_code_quality.sh
+        run: |
+          poetry install --no-interaction --no-plugins
+          poetry run powerchord
 
-      - name: Sync package version with the new release
-        run: scripts/bump_version.sh
-#        working-directory: ./scripts
+      - name: Bump package version
+        run: scripts/bump_package_version.sh
         env:
           RELEASE_VERSION: ${{ github.event.release.tag_name }}
 
-      - name: Publish PyPi package
-        run: scripts/publish_package.sh
-#        working-directory: ./scripts
-        env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      - name: Build package
+        run: |
+          poetry build --no-interaction --no-plugins
 
-#          sed -i 's/version = "0.0.0"/version = "$RELEASE_VERSION"/g' pyproject.toml
-
-#      - name: Publish PyPi package
-#        uses: code-specialist/pypi-poetry-publish@v1.2
-#        with:
-#          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          PUBLISH_REGISTRY_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
