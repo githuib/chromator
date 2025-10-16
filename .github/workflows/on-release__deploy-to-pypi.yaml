@@ -1,0 +1,40 @@
+name: Build and publish python package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-package:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      PYTHON_VERSION: 3.14
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Poetry
+        run: pipx install poetry powerchord
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: $PYTHON_VERSION
+          cache: poetry
+
+      - name: Run QA checks
+        run: scripts/check_code.sh
+
+      - name: Publish PyPi package
+        run: scripts/publish_package.sh
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Sync package version with the new release
+        run: scripts/bump_version.sh
+        env:
+          RELEASE_VERSION: ${{ github.event.release.tag_name }}

@@ -1,34 +1,53 @@
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry]
+[project]
 name = "chromator"
-version = "0.4.7"
+version = "0.5.0"
 description = "Color shades generator"
-authors = ["Huib Piguillet <huib@proton.me>"]
-maintainers = ["Huib Piguillet"]
+requires-python = ">=3.12"
+authors = [
+    { name = "Huib Piguillet", email = "huib@proton.me" },
+]
 license = "MIT"
 readme = "README.md"
-packages = [{ include = "chromator", from = "src" }]
-include = [{ path = "tests", format = "sdist" }]
+homepage = "https://pypi.org/project/chromator/"
 repository = "https://github.com/githuib/chromator"
 keywords = ["color shades generator", "cli utility"]
 classifiers = ["Topic :: Utilities"]
+dependencies = [
+    "hsluv",
+    "yachalk",
+]
 
-[tool.poetry.scripts]
+[dependency-groups]
+qa = [
+    "mypy",
+    "powerchord",
+#    "pytest",
+    "ruff",
+]
+
+[project.scripts]
 chromator = "chromator.cli:main"
 
-[tool.poetry.dependencies]
-python = "^3.13"
-hsluv = "*"
-yachalk = "*"
+[tool.poetry]
+requires-poetry = ">=2.0"
+#version = "0.4.7"
+packages = [{ include = "chromator", from = "src" }]
+#include = [{ path = "tests", format = "sdist" }]
 
-[tool.poetry.group.qa.dependencies]
-mypy = "*"
-#pytest = "*"
-powerchord = "*"
-ruff = "*"
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+#hsluv = "*"
+#yachalk = "*"
+
+#[tool.poetry.group.qa.dependencies]
+#mypy = "*"
+##pytest = "*"
+#powerchord = "*"
+#ruff = "*"
 
 [tool.powerchord]
 tasks = ["ruff check .", "mypy"]
