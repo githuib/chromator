@@ -1,0 +1,51 @@
+name: Build and publish python package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-package:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      POETRY_HOME: /opt/poetry
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: master  # would be refs/tags/x.y.z otherwise
+
+      - name: Install Poetry
+        run: pipx install poetry==2.2.0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          cache: poetry
+
+      - name: Run QA checks
+        run: scripts/check_code_quality.sh
+
+      - name: Sync package version with the new release
+        run: scripts/bump_version.sh
+#        working-directory: ./scripts
+        env:
+          RELEASE_VERSION: ${{ github.event.release.tag_name }}
+
+      - name: Publish PyPi package
+        run: scripts/publish_package.sh
+#        working-directory: ./scripts
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+#          sed -i 's/version = "0.0.0"/version = "$RELEASE_VERSION"/g' pyproject.toml
+
+#      - name: Publish PyPi package
+#        uses: code-specialist/pypi-poetry-publish@v1.2
+#        with:
+#          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          PUBLISH_REGISTRY_PASSWORD: ${{ secrets.PYPI_TOKEN }}
