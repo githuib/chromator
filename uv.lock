@@ -17,7 +17,7 @@ wheels = [
 
 [[package]]
 name = "chromator"
-version = "0.5.7"
+version = "0.5.8"
 source = { editable = "." }
 dependencies = [
     { name = "hsluv" },
@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-qa = [
+dev = [
     { name = "mypy" },
     { name = "powerchord" },
     { name = "ruff" },
@@ -38,7 +38,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-qa = [
+dev = [
     { name = "mypy" },
     { name = "powerchord" },
     { name = "ruff" },

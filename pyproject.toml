@@ -1,6 +1,6 @@
 [project]
 name = "chromator"
-version = "0.5.7"
+version = "0.5.8"
 description = "Color shades generator"
 authors = [{ name = "Huib Piguillet", email = "huib@proton.me" }]
 requires-python = ">=3.12"
