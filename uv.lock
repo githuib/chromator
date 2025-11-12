@@ -3,6 +3,15 @@ revision = 3
 requires-python = ">=3.12"
 
 [[package]]
+name = "based-utils"
+version = "0.0.1337"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/e4/e8221e58eea7770fffc3d0ece82388745b843a2cb94ea77e8fcc7a0688e7/based_utils-0.0.1337.tar.gz", hash = "sha256:29cdfa6432fa953b6e3c312b23c7cfd3f8cdb09c0c9ef21512b2ab6bc502e170", size = 3447, upload-time = "2025-11-12T19:24:43.779Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/29/7a113531be7b432315c8e32a7ba7a634bd1c5e1a84201763b619d0e5f2bb/based_utils-0.0.1337-py3-none-any.whl", hash = "sha256:febba12c1040db5066a908096d7066147dc9703bda0bc0003cc14bbde8201a49", size = 3404, upload-time = "2025-11-12T19:24:42.804Z" },
+]
+
+[[package]]
 name = "chili"
 version = "2.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -17,9 +26,10 @@ wheels = [
 
 [[package]]
 name = "chromator"
-version = "0.5.8"
+version = "0.5.9"
 source = { editable = "." }
 dependencies = [
+    { name = "based-utils" },
     { name = "hsluv" },
     { name = "yachalk" },
 ]
@@ -33,6 +43,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "based-utils" },
     { name = "hsluv" },
     { name = "yachalk" },
 ]

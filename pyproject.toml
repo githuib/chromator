@@ -1,6 +1,6 @@
 [project]
 name = "chromator"
-version = "0.5.8"
+version = "0.5.9"
 description = "Color shades generator"
 authors = [{ name = "Huib Piguillet", email = "huib@proton.me" }]
 requires-python = ">=3.12"
@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
+    "based-utils",
     "hsluv",
     "yachalk",
 ]
@@ -57,6 +58,10 @@ warn_unused_ignores = true
 module = ["hsluv.*"]
 follow_untyped_imports = true
 
+[tool.ruff.format]
+docstring-code-format = true
+skip-magic-trailing-comma = true
+
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
@@ -87,3 +92,6 @@ ignore = [
     # Ruff-specific rules (RUF)
     "RUF013", # https://docs.astral.sh/ruff/rules/implicit-optional/	PEP 484 prohibits implicit Optional
 ]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
