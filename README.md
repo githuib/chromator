@@ -16,7 +16,7 @@ pip install chromator
 
 ```commandline
 $ chromator -h 
-usage: css-shades [-h] [-c COLOR1] [-k COLOR2] [-s STEP] [-e EXTRAPOLATE] [-i] label
+usage: chromator [-h] [-c COLOR1] [-k COLOR2] [-s STEP] [-e EXTRAPOLATE] [-i] label
 
 positional arguments:
   label

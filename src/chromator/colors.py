@@ -5,23 +5,23 @@ from math import pi
 HSLuv = tuple[float, float, float]
 
 
-def trim(n: float, lower: float, upper: float):
+def trim(n: float, lower: float, upper: float) -> float:
     return min(max(lower, n), upper)
 
 
 class Bounds:
-    def __init__(self, begin: float, end: float):
+    def __init__(self, begin: float, end: float) -> None:
         self._begin = begin
         self._end = end
 
     @cached_property
-    def _span(self):
+    def _span(self) -> float:
         return self._end - self._begin
 
-    def interpolate(self, f: float):
+    def interpolate(self, f: float) -> float:
         return self._begin + self._span * f
 
-    def inverse_interpolate(self, n: float, inside=True):
+    def inverse_interpolate(self, n: float, *, inside: bool = True) -> float:
         try:
             f = (n - self._begin) / self._span
         except ZeroDivisionError:
@@ -30,7 +30,7 @@ class Bounds:
 
 
 class CyclicBounds(Bounds):
-    def __init__(self, begin: float, end: float, period: float = pi * 2):
+    def __init__(self, begin: float, end: float, period: float = pi * 2) -> None:
         begin, end = begin % period, end % period
 
         # To ensure interpolation over the smallest angle,
@@ -52,11 +52,11 @@ class CyclicBounds(Bounds):
         super().__init__(begin, end)
         self._period = period
 
-    def interpolate(self, f: float):
+    def interpolate(self, f: float) -> float:
         return super().interpolate(f) % self._period
 
-    def inverse_interpolate(self, n: float, inside=True):
-        return super().inverse_interpolate(n % self._period, inside)
+    def inverse_interpolate(self, n: float, *, inside: bool = True) -> float:
+        return super().inverse_interpolate(n % self._period, inside=inside)
 
 
 def contrasting_color(color: HSLuv) -> HSLuv:
@@ -66,6 +66,7 @@ def contrasting_color(color: HSLuv) -> HSLuv:
 
 def shades_1(
     color: HSLuv,
+    *,
     step: int = 5,
     inclusive: bool = False,
 ) -> Iterator[HSLuv]:
@@ -78,6 +79,7 @@ def shades_1(
 def shades_2(
     color_1: HSLuv,
     color_2: HSLuv,
+    *,
     step: int = 5,
     extrapolate: float = 0,
     inclusive: bool = False,
@@ -107,11 +109,14 @@ def shades_2(
 def shades(
     color_1: HSLuv,
     color_2: HSLuv = None,
+    *,
     step: int = 5,
     extrapolate: float = 0,
     inclusive: bool = False,
-):
+) -> Iterator[HSLuv]:
     if color_2:
-        yield from shades_2(color_1, color_2, step, extrapolate, inclusive)
+        yield from shades_2(
+            color_1, color_2, step=step, extrapolate=extrapolate, inclusive=inclusive
+        )
     else:
-        yield from shades_1(color_1, step, inclusive)
+        yield from shades_1(color_1, step=step, inclusive=inclusive)

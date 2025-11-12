@@ -7,13 +7,13 @@ from yachalk import chalk
 from .colors import HSLuv, contrasting_color, shades
 
 
-def colored(color: HSLuv, s: str = None):
+def colored(color: HSLuv, s: str = None) -> str:
     bg_hex = hsluv_to_hex(color)
     fg_hex = hsluv_to_hex(contrasting_color(color))
     return chalk.hex(fg_hex).bg_hex(bg_hex)(s or bg_hex)
 
 
-def css_color_comment(color: HSLuv):
+def css_color_comment(color: HSLuv) -> str:
     hue, saturation, lightness = color
     return f"""
 {colored(color)}:
@@ -51,6 +51,12 @@ Based on:
 */
 """)
 
-    for h, s, i in shades(c_1, c_2, args.step, args.extrapolate / 100, args.inclusive):
+    for h, s, i in shades(
+        c_1,
+        c_2,
+        step=args.step,
+        extrapolate=args.extrapolate / 100,
+        inclusive=args.inclusive,
+    ):
         color_var = f"--{args.label}-{i:02d}: {hsluv_to_hex((h, s, i))};\n"
         sys.stdout.write(colored((h, s, i), color_var))
