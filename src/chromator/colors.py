@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from based_utils.utils.math import Bounds, CyclicBounds
+from based_utils.math import Bounds, CyclicBounds
 
 HSLuv = tuple[float, float, float]
 
