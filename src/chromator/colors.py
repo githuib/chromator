@@ -1,6 +1,10 @@
-from collections.abc import Iterator
 
-from based_utils.math import Bounds, CyclicBounds
+from typing import TYPE_CHECKING
+
+from based_utils.calx import Bounds, CyclicBounds
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 HSLuv = tuple[float, float, float]
 
@@ -11,10 +15,7 @@ def contrasting_color(color: HSLuv) -> HSLuv:
 
 
 def shades_1(
-    color: HSLuv,
-    *,
-    step: int = 5,
-    inclusive: bool = False,
+    color: HSLuv, *, step: int = 5, inclusive: bool = False
 ) -> Iterator[HSLuv]:
     hue, saturation, _ = color
     s = step if inclusive else 0

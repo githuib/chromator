@@ -3,7 +3,7 @@ name = "chromator"
 version = "0.5.10"
 description = "Color shades generator"
 authors = [{ name = "Huib Piguillet", email = "huib@proton.me" }]
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 readme = "README.md"
 license = "MIT"
 keywords = [
