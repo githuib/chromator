@@ -1,7 +1,13 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from based_utils.calx import FULL_CIRCLE, Bounds, CyclicBounds, frange, trim
+from based_utils.calx import (
+    CyclicInterpolationBounds,
+    InterpolationBounds,
+    fractions,
+    interpolate,
+    trim,
+)
 from based_utils.colors import HSLuv
 
 if TYPE_CHECKING:
@@ -18,19 +24,20 @@ class InterpolationParams:
 def _shades_2(
     color_1: HSLuv, color_2: HSLuv, *, params: InterpolationParams
 ) -> Iterator[HSLuv]:
-    dark_color, bright_color = sorted([color_1, color_2])
+    c_dark, c_bright = sorted([color_1, color_2])
 
-    l_dark = Bounds(dark_color.lightness, 0).interpolate(params.dynamic_range)
-    l_bright = Bounds(bright_color.lightness, 1).interpolate(params.dynamic_range)
+    dynamic_range = params.dynamic_range
+    l_dark = interpolate(dynamic_range, start=c_dark.lightness, end=0)
+    l_bright = interpolate(dynamic_range, start=c_bright.lightness, end=1)
+    lightness_bounds = InterpolationBounds(l_dark, l_bright)
 
-    hue_bounds = CyclicBounds(dark_color.hue, bright_color.hue, FULL_CIRCLE)
-    saturation_bounds = Bounds(dark_color.saturation, bright_color.saturation)
-    lightness_bounds = Bounds(l_dark, l_bright)
+    saturation_bounds = InterpolationBounds(c_dark.saturation, c_bright.saturation)
+    hue_bounds = CyclicInterpolationBounds(c_dark.hue, c_bright.hue)
 
-    for lightness in frange(params.n, inclusive=params.inclusive):
+    for lightness in fractions(params.n, inclusive=params.inclusive):
         f = lightness_bounds.inverse_interpolate(lightness, inside=False)
-        hue = hue_bounds.interpolate(f) % FULL_CIRCLE
-        saturation = trim(saturation_bounds.interpolate(f), 0, 1)
+        hue = hue_bounds.interpolate(f)
+        saturation = trim(saturation_bounds.interpolate(f))
         yield HSLuv(lightness, saturation, hue)
 
 
