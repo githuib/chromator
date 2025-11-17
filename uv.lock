@@ -4,15 +4,15 @@ requires-python = ">=3.14"
 
 [[package]]
 name = "based-utils"
-version = "0.4.4"
+version = "0.4.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gaffe" },
     { name = "hsluv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/f8/a2ff7df46450a0407fa5138875d69522a6975798a359c914b4d84ad87f1a/based_utils-0.4.4.tar.gz", hash = "sha256:8eb2ea1b359f1893a1a4fb1f5dc93f6179bfbbd3b5f6838f939f691efbf9535e", size = 10272, upload-time = "2025-11-17T20:12:52.187Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/b8/5a31616571f2feb7642a9b885d707e2d716795ac6044b1b43805856eb52b/based_utils-0.4.7.tar.gz", hash = "sha256:5d7c4ff0df418393a68421385e9aee40aeacf6a365f404320b301fe6a3b711e4", size = 10968, upload-time = "2025-11-17T23:45:44.716Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/21/92/2e1bb648e277beafee9f1bf46cf33acf0179df5fb493bde9bff014f8580f/based_utils-0.4.4-py3-none-any.whl", hash = "sha256:ad647dac54cb65bef00d24fc9629caef74cc663d8e5d8ee6d51b8452d32c9963", size = 12777, upload-time = "2025-11-17T20:12:50.784Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/d9/1b333938617a8a63df6d95957543156296091f3d41d2867edaf6e3be56fc/based_utils-0.4.7-py3-none-any.whl", hash = "sha256:987a4a2c4bddabec8c71f3cd4e58857ca119d5f79725d5311a4a6c9994d9c3c7", size = 13480, upload-time = "2025-11-17T23:45:43.306Z" },
 ]
 
 [[package]]
@@ -30,7 +30,7 @@ wheels = [
 
 [[package]]
 name = "chromator"
-version = "0.6.3"
+version = "0.6.4"
 source = { editable = "." }
 dependencies = [
     { name = "based-utils" },
