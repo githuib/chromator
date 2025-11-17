@@ -9,23 +9,17 @@ from . import log
 from .shades import InterpolationParams, generate_shades
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
 _log = log.get_logger()
 
 
-def _colored(color: HSLuv, s: str = None) -> str:
-    bg_hex = color.hex
-    fg_hex = color.contrasting_shade.hex
-    return chalk.hex(fg_hex).bg_hex(bg_hex)(s or bg_hex)
+def _colored(color: HSLuv, s: str) -> str:
+    return chalk.hex(color.contrasting_shade.hex).bg_hex(color.hex)(s)
 
 
 def _css_color_comment(color: HSLuv) -> str:
-    return f"""
-{_colored(color)}:
-- Hue: {color.hue:.1f}°
-- Saturation: {color.saturation:.1f}%
-- Lightness: {color.lightness:.1f}%"""
+    return _colored(color, f"#{color.hex} --> {color}")
 
 
 def _shades_as_css_variables(
@@ -33,14 +27,37 @@ def _shades_as_css_variables(
 ) -> Iterator[str]:
     yield "/*"
     yield "Based on:"
-    yield _css_color_comment(c_1)
     if c_2:
-        yield _css_color_comment(c_2)
+        c_dark, c_bright = sorted([c_1, c_2])
+        yield f"- Darkest:   {_css_color_comment(c_dark)}"
+        yield f"- Brightest: {_css_color_comment(c_bright)}"
+    else:
+        yield _css_color_comment(c_1)
     yield "*/"
 
     for color in generate_shades(c_1, c_2, params=params):
-        color_var = f"--{label}-{int(color.lightness):02d}: #{color.hex};"
+        num = int(color.lightness * 100)
+        color_var = f"--{label}-{num:02d}: #{color.hex}; /* --> {color} */"
         yield _colored(color, color_var)
+
+
+def check_integer(v: str, *, conditions: Callable[[int], bool] = None) -> int:
+    value = int(v)
+    if conditions and not conditions(value):
+        raise ValueError(value)
+    return value
+
+
+def check_integer_within_range(
+    low: int | None, high: int | None
+) -> Callable[[str], int]:
+    def is_in_within_range(n: int) -> bool:
+        return (low is None or n >= low) and (high is None or n <= high)
+
+    def check(v: str) -> int:
+        return check_integer(v, conditions=is_in_within_range)
+
+    return check
 
 
 def main() -> None:
@@ -49,11 +66,11 @@ def main() -> None:
     parser.add_argument("-c", "--color1", type=str)
     parser.add_argument("-k", "--color2", type=str, default=None)
     parser.add_argument(
-        "-s", "--step", type=int, default=5, choices=[1, 2, 4, 5, 10, 20, 25, 50]
+        "-n", "--amount", type=check_integer_within_range(0, None), default=19
     )
     parser.add_argument("-i", "--inclusive", action="store_true", default=False)
     parser.add_argument(
-        "-d", "--dynamic-range", type=int, default=0, choices=list(range(101))
+        "-d", "--dynamic-range", type=check_integer_within_range(0, 100), default=0
     )
     args = parser.parse_args()
 
@@ -62,7 +79,7 @@ def main() -> None:
             HSLuv.from_hex(args.color1),
             HSLuv.from_hex(args.color2),
             params=InterpolationParams(
-                args.step, args.inclusive, args.dynamic_range / 100
+                args.amount, args.inclusive, args.dynamic_range / 100
             ),
             label=args.label,
         ):

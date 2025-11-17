@@ -4,15 +4,14 @@ requires-python = ">=3.14"
 
 [[package]]
 name = "based-utils"
-version = "0.4.1"
+version = "0.4.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gaffe" },
     { name = "hsluv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/0d/d159e2ac83a6d0f30cbeffc148b6b5526fcba3edcb7a995137ee1d8ce008/based_utils-0.4.1.tar.gz", hash = "sha256:4a29360142076bc10f57673a7dd1b8d30f5c065d0735801f79ada2c3b44c8de2", size = 9533, upload-time = "2025-11-17T15:51:36.249Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fe/5d/08ce0db6fcf678f0db34579dd95fc6cb813b7c5894881a2e359d7517d49c/based_utils-0.4.1-py3-none-any.whl", hash = "sha256:1406a574c63b6e2caa88e654f3a28b9e981e11d0f78bee8515d0b775ea4202e8", size = 11645, upload-time = "2025-11-17T15:51:34.922Z" },
+    { url = "https://files.pythonhosted.org/packages/21/92/2e1bb648e277beafee9f1bf46cf33acf0179df5fb493bde9bff014f8580f/based_utils-0.4.4-py3-none-any.whl", hash = "sha256:ad647dac54cb65bef00d24fc9629caef74cc663d8e5d8ee6d51b8452d32c9963", size = 12777, upload-time = "2025-11-17T20:12:50.784Z" },
 ]
 
 [[package]]
