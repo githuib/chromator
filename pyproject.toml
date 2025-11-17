@@ -22,7 +22,6 @@ classifiers = [
 ]
 dependencies = [
     "based-utils",
-    "hsluv",
     "yachalk",
 ]
 
@@ -53,10 +52,6 @@ files = ["src", "tests"]
 implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-
-[[tool.mypy.overrides]]
-module = ["hsluv.*"]
-follow_untyped_imports = true
 
 [tool.ruff.format]
 docstring-code-format = true

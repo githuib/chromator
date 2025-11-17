@@ -1,25 +1,42 @@
 import argparse
-import sys
 
-from hsluv import hex_to_hsluv, hsluv_to_hex
+from based_utils.cli import LogLevel
+from based_utils.colors import HSLuv
 from yachalk import chalk
 
-from .colors import HSLuv, contrasting_color, shades
+from . import log
+from .shades import InterpolationParams, generate_shades
+
+_log = log.get_logger()
 
 
-def colored(color: HSLuv, s: str = None) -> str:
-    bg_hex = hsluv_to_hex(color)
-    fg_hex = hsluv_to_hex(contrasting_color(color))
+def _colored(color: HSLuv, s: str = None) -> str:
+    bg_hex = color.hex
+    fg_hex = color.contrasting_shade.hex
     return chalk.hex(fg_hex).bg_hex(bg_hex)(s or bg_hex)
 
 
-def css_color_comment(color: HSLuv) -> str:
-    hue, saturation, lightness = color
+def _css_color_comment(color: HSLuv) -> str:
     return f"""
-{colored(color)}:
-- Hue: {hue:.1f}°
-- Saturation: {saturation:.1f}%
-- Lightness: {lightness:.1f}%"""
+{_colored(color)}:
+- Hue: {color.hue:.1f}°
+- Saturation: {color.saturation:.1f}%
+- Lightness: {color.lightness:.1f}%"""
+
+
+def _shades_as_css_variables(
+    c_1: HSLuv, c_2: HSLuv | None, *, params: InterpolationParams, label: str
+) -> None:
+    _log.info("/*")
+    _log.info("Based on:")
+    _log.info(_css_color_comment(c_1))
+    if c_2:
+        _log.info(_css_color_comment(c_2))
+    _log.info("*/")
+
+    for color in generate_shades(c_1, c_2, params=params):
+        color_var = f"--{label}-{int(color.lightness):02d}: #{color.hex};"
+        _log.info(_colored(color, color_var))
 
 
 def main() -> None:
@@ -27,36 +44,21 @@ def main() -> None:
     parser.add_argument("label", type=str)
     parser.add_argument("-c", "--color1", type=str)
     parser.add_argument("-k", "--color2", type=str, default=None)
-    parser.add_argument("-s", "--step", type=int, default=5)
-    parser.add_argument("-e", "--extrapolate", type=int, default=0)
+    parser.add_argument(
+        "-s", "--step", type=int, default=5, choices=[1, 2, 4, 5, 10, 20, 25, 50]
+    )
     parser.add_argument("-i", "--inclusive", action="store_true", default=False)
+    parser.add_argument(
+        "-d", "--dynamic-range", type=int, default=0, choices=list(range(101))
+    )
     args = parser.parse_args()
 
-    c_1 = hex_to_hsluv(f"#{args.color1}")
-
-    if args.color2:
-        c_2 = hex_to_hsluv(f"#{args.color2}")
-        sys.stdout.write(f"""/*
-Based on:
-{css_color_comment(c_1)}
-{css_color_comment(c_2)}
-*/
-""")
-
-    else:
-        c_2 = None
-        sys.stdout.write(f"""/*
-Based on:
-{css_color_comment(c_1)}
-*/
-""")
-
-    for h, s, i in shades(
-        c_1,
-        c_2,
-        step=args.step,
-        extrapolate=args.extrapolate / 100,
-        inclusive=args.inclusive,
-    ):
-        color_var = f"--{args.label}-{i:02d}: {hsluv_to_hex((h, s, i))};\n"
-        sys.stdout.write(colored((h, s, i), color_var))
+    with log.context(LogLevel.INFO):
+        _shades_as_css_variables(
+            HSLuv.from_hex(args.color1),
+            HSLuv.from_hex(args.color2),
+            params=InterpolationParams(
+                args.step, args.inclusive, args.dynamic_range / 100
+            ),
+            label=args.label,
+        )
