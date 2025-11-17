@@ -1,4 +1,5 @@
 import argparse
+from typing import TYPE_CHECKING
 
 from based_utils.cli import LogLevel
 from based_utils.colors import HSLuv
@@ -6,6 +7,9 @@ from yachalk import chalk
 
 from . import log
 from .shades import InterpolationParams, generate_shades
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 _log = log.get_logger()
 
@@ -26,17 +30,17 @@ def _css_color_comment(color: HSLuv) -> str:
 
 def _shades_as_css_variables(
     c_1: HSLuv, c_2: HSLuv | None, *, params: InterpolationParams, label: str
-) -> None:
-    _log.info("/*")
-    _log.info("Based on:")
-    _log.info(_css_color_comment(c_1))
+) -> Iterator[str]:
+    yield "/*"
+    yield "Based on:"
+    yield _css_color_comment(c_1)
     if c_2:
-        _log.info(_css_color_comment(c_2))
-    _log.info("*/")
+        yield _css_color_comment(c_2)
+    yield "*/"
 
     for color in generate_shades(c_1, c_2, params=params):
         color_var = f"--{label}-{int(color.lightness):02d}: #{color.hex};"
-        _log.info(_colored(color, color_var))
+        yield _colored(color, color_var)
 
 
 def main() -> None:
@@ -54,11 +58,12 @@ def main() -> None:
     args = parser.parse_args()
 
     with log.context(LogLevel.INFO):
-        _shades_as_css_variables(
+        for line in _shades_as_css_variables(
             HSLuv.from_hex(args.color1),
             HSLuv.from_hex(args.color2),
             params=InterpolationParams(
                 args.step, args.inclusive, args.dynamic_range / 100
             ),
             label=args.label,
-        )
+        ):
+            _log.info(line)
