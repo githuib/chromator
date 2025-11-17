@@ -30,7 +30,7 @@ wheels = [
 
 [[package]]
 name = "chromator"
-version = "0.5.11"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "based-utils" },
