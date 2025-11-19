@@ -8,7 +8,7 @@ from based_utils.calx import (
     interpolate,
     trim,
 )
-from based_utils.colors import HSLuv
+from based_utils.colors import Color
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -22,8 +22,8 @@ class InterpolationParams:
 
 
 def _shades_2(
-    color_1: HSLuv, color_2: HSLuv, *, params: InterpolationParams
-) -> Iterator[HSLuv]:
+    color_1: Color, color_2: Color, *, params: InterpolationParams
+) -> Iterator[Color]:
     c_dark, c_bright = sorted([color_1, color_2])
 
     dynamic_range = params.dynamic_range
@@ -38,12 +38,12 @@ def _shades_2(
         f = lightness_bounds.inverse_interpolate(lightness, inside=False)
         hue = hue_bounds.interpolate(f)
         saturation = trim(saturation_bounds.interpolate(f))
-        yield HSLuv(lightness, saturation, hue)
+        yield Color(lightness, saturation, hue)
 
 
 def generate_shades(
-    color_1: HSLuv, color_2: HSLuv = None, *, params: InterpolationParams
-) -> Iterator[HSLuv]:
+    color_1: Color, color_2: Color = None, *, params: InterpolationParams
+) -> Iterator[Color]:
     return (
         _shades_2(color_1, color_2, params=params)
         if color_2

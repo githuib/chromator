@@ -7,29 +7,28 @@ requires-python = ">=3.14"
 readme = "README.md"
 license = "MIT"
 keywords = [
-    "color shades generator",
-    "cli utility",
+  "color shades generator",
+  "cli utility",
 ]
 classifiers = [
-    "Intended Audience :: Developers",
-    "Topic :: Utilities",
-    "Topic :: Software Development :: Build Tools",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
-    "Programming Language :: Python :: 3 :: Only",
+  "Intended Audience :: Developers",
+  "Topic :: Utilities",
+  "Topic :: Software Development :: Build Tools",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
-    "based-utils",
-    "yachalk",
+  "based-utils",
 ]
 
 [dependency-groups]
 dev = [
-    "mypy",
-    "powerchord",
-    "ruff",
+  "mypy",
+  "powerchord",
+  "ruff",
 ]
 
 [project.urls]
@@ -63,29 +62,29 @@ skip-magic-trailing-comma = true
 # McCabe complexity (`C901`) by default.
 select = ["ALL"]
 ignore = [
-    # pydocstyle (D)
-    "D100", # https://docs.astral.sh/ruff/rules/undocumented-public-module/	Missing docstring in public module
-    "D101", # https://docs.astral.sh/ruff/rules/undocumented-public-class/	Missing docstring in public class
-    "D102", # https://docs.astral.sh/ruff/rules/undocumented-public-method/	Missing docstring in public method
-    "D103", # https://docs.astral.sh/ruff/rules/undocumented-public-function/	Missing docstring in public function
-    "D104", # https://docs.astral.sh/ruff/rules/undocumented-public-package/	Missing docstring in public package
-    "D105", # https://docs.astral.sh/ruff/rules/undocumented-magic-method/	Missing docstring in magic method
-    "D106", # https://docs.astral.sh/ruff/rules/undocumented-public-nested-class/	Missing docstring in public nested class
-    "D107", # https://docs.astral.sh/ruff/rules/undocumented-public-init/	Missing docstring in __init__
-    # warning: The following rule may cause conflicts when used with the formatter: `D203`. To avoid unexpected behavior, we recommend disabling this rule
-    "D203", # https://docs.astral.sh/ruff/rules/incorrect-blank-line-before-class/	1 blank line required before class docstring
-    "D211", # https://docs.astral.sh/ruff/rules/blank-line-before-class/	No blank lines allowed before class docstring
-    "D212", # https://docs.astral.sh/ruff/rules/multi-line-summary-first-line/	Multi-line docstring summary should start at the first line
+  # pydocstyle (D)
+  "D100", # https://docs.astral.sh/ruff/rules/undocumented-public-module/	Missing docstring in public module
+  "D101", # https://docs.astral.sh/ruff/rules/undocumented-public-class/	Missing docstring in public class
+  "D102", # https://docs.astral.sh/ruff/rules/undocumented-public-method/	Missing docstring in public method
+  "D103", # https://docs.astral.sh/ruff/rules/undocumented-public-function/	Missing docstring in public function
+  "D104", # https://docs.astral.sh/ruff/rules/undocumented-public-package/	Missing docstring in public package
+  "D105", # https://docs.astral.sh/ruff/rules/undocumented-magic-method/	Missing docstring in magic method
+  "D106", # https://docs.astral.sh/ruff/rules/undocumented-public-nested-class/	Missing docstring in public nested class
+  "D107", # https://docs.astral.sh/ruff/rules/undocumented-public-init/	Missing docstring in __init__
+  # warning: The following rule may cause conflicts when used with the formatter: `D203`. To avoid unexpected behavior, we recommend disabling this rule
+  "D203", # https://docs.astral.sh/ruff/rules/incorrect-blank-line-before-class/	1 blank line required before class docstring
+  "D211", # https://docs.astral.sh/ruff/rules/blank-line-before-class/	No blank lines allowed before class docstring
+  "D212", # https://docs.astral.sh/ruff/rules/multi-line-summary-first-line/	Multi-line docstring summary should start at the first line
 
-    # flake8-commas (COM)
-    # warning: The following rule may cause conflicts when used with the formatter: `COM812`
-    "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/	Trailing comma missing
+  # flake8-commas (COM)
+  # warning: The following rule may cause conflicts when used with the formatter: `COM812`
+  "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/	Trailing comma missing
 
-    # flake8-logging-format (G)
-    "G004", # https://docs.astral.sh/ruff/rules/logging-f-string/	Logging statement uses f-string
+  # flake8-logging-format (G)
+  "G004", # https://docs.astral.sh/ruff/rules/logging-f-string/	Logging statement uses f-string
 
-    # Ruff-specific rules (RUF)
-    "RUF013", # https://docs.astral.sh/ruff/rules/implicit-optional/	PEP 484 prohibits implicit Optional
+  # Ruff-specific rules (RUF)
+  "RUF013", # https://docs.astral.sh/ruff/rules/implicit-optional/	PEP 484 prohibits implicit Optional
 ]
 
 [tool.ruff.lint.isort]
