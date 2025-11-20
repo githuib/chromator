@@ -8,10 +8,16 @@ from based_utils.calx import (
     interpolate,
     trim,
 )
+from based_utils.cli import Colored
 from based_utils.colors import Color
+
+from . import log
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+
+_log = log.get_logger()
 
 
 @dataclass(frozen=True)
@@ -41,7 +47,7 @@ def _shades_2(
         yield Color(lightness, saturation, hue)
 
 
-def generate_shades(
+def _generate_shades(
     color_1: Color, color_2: Color = None, *, params: InterpolationParams
 ) -> Iterator[Color]:
     return (
@@ -49,3 +55,30 @@ def generate_shades(
         if color_2
         else color_1.shades(params.n, inclusive=params.inclusive)
     )
+
+
+def _colored(s: str, color: Color) -> str:
+    return Colored(s, color.contrasting_shade, color).formatted
+
+
+def _css_color_comment(color: Color) -> str:
+    return _colored(f"#{color.hex} --> {color}", color)
+
+
+def shades_as_css_variables(
+    c_1: Color, c_2: Color | None, *, params: InterpolationParams, label: str
+) -> Iterator[str]:
+    yield "/*"
+    yield "Based on:"
+    if c_2:
+        c_dark, c_bright = sorted([c_1, c_2])
+        yield f"- Darkest:   {_css_color_comment(c_dark)}"
+        yield f"- Brightest: {_css_color_comment(c_bright)}"
+    else:
+        yield _css_color_comment(c_1)
+    yield "*/"
+
+    for color in _generate_shades(c_1, c_2, params=params):
+        num = int(color.lightness * 100)
+        color_var = f"--{label}-{num:02d}: #{color.hex}; /* --> {color} */"
+        yield _colored(color_var, color)
