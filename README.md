@@ -18,13 +18,11 @@ pip install chromator
 
 ```commandline
 $ chromator css -h
-usage: chromator css [-h] [-c COLOR1] [-k COLOR2] [-n AMOUNT] [-i] [-d DYNAMIC_RANGE] label
-
-positional arguments:
-  label
+usage: chromator css [-h] [-l LABEL] [-c COLOR1] [-k COLOR2] [-n AMOUNT] [-i] [-d DYNAMIC_RANGE]
 
 options:
   -h, --help            show this help message and exit
+  -l, --label LABEL
   -c, --color1 COLOR1
   -k, --color2 COLOR2
   -n, --amount AMOUNT
@@ -35,7 +33,7 @@ options:
 #### Shades as CSS variables, based on one input color:
 
 ```commandline
-$ chromator css bad-ass -c bada55 -n 9
+$ chromator css -l bad-ass -c bada55 -n 9
 /*
 Based on:
 #bada55 --> Color(hue=100.61°, saturation=82.87%, lightness=82.51%)
@@ -54,7 +52,7 @@ Based on:
 #### Shades as CSS variables, based on two input colors:
 
 ```commandline
-$ chromator css worse-ass -c bada55 -k b000b5 -n 9 -d 50
+$ chromator css -l worse-ass -c bada55 -k b000b5 -n 9 -d 50
 /*
 Based on:
 - Darkest:   #b000b5 --> Color(hue=305.50°, saturation=100.00%, lightness=42.10%)
