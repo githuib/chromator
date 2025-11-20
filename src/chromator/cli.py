@@ -25,8 +25,8 @@ def _css_variables(args: argparse.Namespace) -> None:
 
 def parse_args_css_variables(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-l", "--label", type=str, default="color")
-    parser.add_argument("-c", "--color1", type=str)
-    parser.add_argument("-k", "--color2", type=str, default=None)
+    parser.add_argument("-c", "--color1", type=str, required=True)
+    parser.add_argument("-k", "--color2", type=str)
     parser.add_argument(
         "-n", "--amount", type=check_integer_within_range(0, None), default=19
     )
