@@ -18,7 +18,8 @@ pip install chromator
 
 ```commandline
 $ chromator css -h
-usage: chromator css [-h] [-l LABEL] [-c COLOR1] [-k COLOR2] [-n AMOUNT] [-i] [-d DYNAMIC_RANGE]
+usage: chromator css [-h] [-l LABEL] [-c COLOR1] [-k COLOR2] [-n AMOUNT] [-i]
+                     [-d DYNAMIC_RANGE]
 
 options:
   -h, --help            show this help message and exit
@@ -75,7 +76,9 @@ Based on:
 
 ```commandline
 $ chromator colors -h
-usage: chromator colors [-h] [--red RED] [--orange ORANGE] [--yellow YELLOW] [--poison POISON] [--green GREEN] [--ocean OCEAN] [--blue BLUE] [--indigo INDIGO] [--purple PURPLE]
+usage: chromator colors [-h] [--red RED] [--orange ORANGE] [--yellow YELLOW]
+                        [--poison POISON] [--green GREEN] [--ocean OCEAN]
+                        [--blue BLUE] [--indigo INDIGO] [--purple PURPLE]
                         [--pink PINK]
 
 options:
