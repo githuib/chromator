@@ -11,6 +11,7 @@ dependencies = [
     { name = "hsluv" },
     { name = "yachalk" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/89/9d/a47a981ec30a549f2dbc6e1b1ae53e55f6209e28c45873e3e1d8b72f85a7/based_utils-0.6.5.tar.gz", hash = "sha256:8df846741fb77193634c05f1c1a22800f79ac576f2dfa7421104656843d33778", size = 12997, upload-time = "2025-11-20T02:11:16.218Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/75/53/d4e285c47562e29efb0badf2d2a5711aa95c8d62bf4c4db58b70016d17f6/based_utils-0.6.5-py3-none-any.whl", hash = "sha256:5af249a647bb5469e2032a88894b7584a303bd9c15743e5433464f8a00ced522", size = 16686, upload-time = "2025-11-20T02:11:15.125Z" },
 ]
@@ -30,7 +31,7 @@ wheels = [
 
 [[package]]
 name = "chromator"
-version = "0.6.6"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "based-utils" },
