@@ -50,7 +50,7 @@ def _color_theme(args: argparse.Namespace) -> None:
         theme_cls = AltColors if args.alt_default_theme else Colors
         hues = dict(get_class_vars(theme_cls, Color)) | hues
     with log.context(LogLevel.INFO):
-        for line in color_lines(hues):
+        for line in color_lines(hues, n_shades=args.num_shades):
             _log.info(line)
 
 
@@ -67,6 +67,9 @@ def parse_args_color_theme(parser: argparse.ArgumentParser) -> None:
         "-m", "--merge-with-default-theme", action="store_true", default=False
     )
     parser.add_argument("-a", "--alt-default-theme", action="store_true", default=False)
+    parser.add_argument(
+        "-n", "--num-shades", type=check_integer_in_range(1, 99), default=19
+    )
     parser.set_defaults(func=_color_theme)
 
 

@@ -18,8 +18,8 @@ def _color_line(color: Color, name: str, shades: Iterable[float]) -> str:
     return shades_str + Colored(f" {hue} {name}", color).formatted
 
 
-def color_lines(color_theme: dict[str, Color]) -> Iterator[str]:
-    shades = list(fractions(11))
+def color_lines(color_theme: dict[str, Color], *, n_shades: int = 19) -> Iterator[str]:
+    shades = list(fractions(n_shades))
 
     # Any color will be grey when saturation is set to 0.
     yield _color_line(ColorTheme.grey, "grey", shades)
