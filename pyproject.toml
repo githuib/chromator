@@ -13,45 +13,55 @@ keywords = [
 classifiers = [
   "Intended Audience :: Developers",
   "Topic :: Utilities",
-  "Topic :: Software Development :: Build Tools",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
-  "based-utils",
+  "hsluv",
 ]
 
 [dependency-groups]
 dev = [
   "mypy",
   "powerchord",
+  "pytest",
   "ruff",
 ]
 
 [project.urls]
 PyPI = "https://pypi.org/project/kleur/"
-Github = "https://github.com/githuib/chromator"
+Github = "https://github.com/githuib/kleur"
 
-#[tool.uv.sources]
-#based-utils = { path = "../based-utils", editable = true }
-#
 [project.scripts]
-kleur = "kleur.cli:main"
+kleur = "kleur.cli.main:main"
 
 [build-system]
 requires = ["uv_build>=0.9.3,<0.10.0"]
 build-backend = "uv_build"
 
 [tool.powerchord]
-tasks = ["ruff check .", "mypy"]
+tasks = ["ruff check .", "mypy", "pytest"]
 
 [tool.mypy]
-files = ["src", "tests"]
+files = [
+  "src"
+]
 #color_output = true
 implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["hsluv.*"]
+follow_untyped_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-ra --doctest-modules"
+testpaths = [
+  "src/kleur",
+  #  "tests",
+]
 
 [tool.ruff.format]
 docstring-code-format = true

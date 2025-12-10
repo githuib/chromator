@@ -1,3 +1,4 @@
-from based_utils.cli import LogMeister
+from .colors import AltColors, Color, Colors, ColorTheme, c
+from .formatting import Colored
 
-log = LogMeister(__name__)
+__all__ = ["AltColors", "Color", "ColorTheme", "Colored", "Colors", "c"]

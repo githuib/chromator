@@ -1,8 +1,6 @@
 from typing import TYPE_CHECKING
 
-from based_utils.calx import fractions
-from based_utils.cli import Colored
-from based_utils.colors import Color, ColorTheme
+from kleur import Color, Colored, ColorTheme
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -19,7 +17,8 @@ def _color_line(color: Color, name: str, shades: Iterable[float]) -> str:
 
 
 def color_lines(color_theme: dict[str, Color], *, n_shades: int = 19) -> Iterator[str]:
-    shades = list(fractions(n_shades))
+    n = n_shades + 1
+    shades = [i / n for i in range(1, n)]
 
     # Any color will be grey when saturation is set to 0.
     yield _color_line(ColorTheme.grey, "grey", shades)
