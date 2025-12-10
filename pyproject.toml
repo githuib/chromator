@@ -33,6 +33,9 @@ dev = [
 PyPI = "https://pypi.org/project/chromator/"
 Github = "https://github.com/githuib/chromator"
 
+#[tool.uv.sources]
+#based-utils = { path = "../based-utils", editable = true }
+#
 [project.scripts]
 chromator = "chromator.cli:main"
 

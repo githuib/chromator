@@ -1,24 +1,13 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from based_utils.calx import (
-    CyclicInterpolationBounds,
-    InterpolationBounds,
-    fractions,
-    interpolate,
-)
+from based_utils.calx import InterpolationBounds, fractions, interpolate
 from based_utils.cli import Colored
-from based_utils.colors import Color
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-
-@dataclass(frozen=True)
-class InterpolationParams:
-    amount: int = 19
-    inclusive: bool = False
-    dynamic_range: float = 0
+    from based_utils.colors import Color
 
 
 def _colored(s: str, color: Color) -> str:
@@ -26,49 +15,73 @@ def _colored(s: str, color: Color) -> str:
 
 
 def _css_color_comment(color: Color) -> str:
-    return _colored(f"#{color.hex} --> {color}", color)
+    return _colored(f"#{color.as_hex} --> {color}", color)
 
 
-def _shades_2(
-    c_dark: Color, c_bright: Color, *, params: InterpolationParams
-) -> Iterator[Color]:
-    dynamic_range = params.dynamic_range
-    l_dark = interpolate(dynamic_range, start=c_dark.lightness, end=0)
-    l_bright = interpolate(dynamic_range, start=c_bright.lightness, end=1)
+@dataclass(frozen=True)
+class ShadesParams:
+    amount: int = 19
+    dynamic_range: float = 0
+    include_black_white: bool = False
+    include_input: bool = False
 
-    lightness_bounds = InterpolationBounds(l_dark, l_bright)
-    saturation_bounds = InterpolationBounds(c_dark.saturation, c_bright.saturation)
-    hue_bounds = CyclicInterpolationBounds(c_dark.hue, c_bright.hue)
 
-    for lightness in fractions(params.amount, inclusive=params.inclusive):
-        f = lightness_bounds.inverse_interpolate(lightness, inside=False)
-        yield Color.from_fields(
-            lightness=lightness,
-            saturation=saturation_bounds.interpolate(f),
-            hue=hue_bounds.interpolate(f),
-        )
+def _shades(
+    c_dark: Color, c_bright: Color, *, params: ShadesParams
+) -> list[tuple[Color, int]]:
+    old_li_dark, old_li_bright = c_dark.lightness, c_bright.lightness
+    li_dark = interpolate(params.dynamic_range, (old_li_dark, 0))
+    li_bright = interpolate(params.dynamic_range, (old_li_bright, 1))
+    dark, bright = c_dark.shade(li_dark), c_bright.shade(li_bright)
+    li_bounds = InterpolationBounds(li_dark, li_bright)
+
+    def color_for_li(lightness: float) -> Color:
+        return dark.blend(bright, li_bounds.inverse_interpolate(lightness))
+
+    shades = fractions(params.amount, inclusive=params.include_black_white)
+    colors = [(color_for_li(li), 0) for li in shades]
+    if params.include_input:
+        colors += [(color_for_li(old_li_dark), 1), (color_for_li(old_li_bright), 2)]
+    return sorted(colors)
 
 
 def shades_as_css_variables(
-    c_1: Color, c_2: Color | None, *, params: InterpolationParams, label: str
+    c_1: Color, c_2: Color | None, *, params: ShadesParams, label: str
 ) -> Iterator[str]:
-    if c_2 and c_2 < c_1:
-        c_1, c_2 = c_2, c_1
-
     yield "/*"
     yield "Based on:"
 
     if c_2:
+        if c_2 < c_1:
+            c_1, c_2 = c_2, c_1
+
         yield f"- Darkest:   {_css_color_comment(c_1)}"
         yield f"- Brightest: {_css_color_comment(c_2)}"
-        shades = _shades_2(c_1, c_2, params=params)
+        shades = _shades(c_1, c_2, params=params)
 
     else:
         yield _css_color_comment(c_1)
-        shades = c_1.shades(params.amount, inclusive=params.inclusive)
+        shades = [
+            (c_1.shade(s), 0)
+            for s in fractions(params.amount, inclusive=params.include_black_white)
+        ]
+        if params.include_input:
+            shades.append((c_1, 1))
+        shades.sort()
 
     yield "*/"
 
-    for color in shades:
-        color_var = f"--{label}-{color.lightness * 100:02.0f}"
-        yield _colored(f"{color_var}: #{color.hex}; /* --> {color} */", color)
+    for c, v in shades:
+        if v:
+            s = " <-- "
+            if c_2:
+                s += f"same lightness as {'darkest' if v == 1 else 'brightest'} "
+            s += "input"
+            c_print = c.contrasting_shade
+
+        else:
+            s, c_print = "", c
+
+        var = f"{f'--{label}-{c.lightness * 100:02.0f}'}: #{c.as_hex};"
+        comment = f"/* --> {c}{s} */"
+        yield _colored(f"{var} {comment}", c_print)
