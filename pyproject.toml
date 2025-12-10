@@ -1,5 +1,5 @@
 [project]
-name = "chromator"
+name = "kleur"
 version = "1.1.3"
 description = "Color shades generator"
 authors = [{ name = "Huib Piguillet", email = "huib@proton.me" }]
@@ -30,14 +30,14 @@ dev = [
 ]
 
 [project.urls]
-PyPI = "https://pypi.org/project/chromator/"
+PyPI = "https://pypi.org/project/kleur/"
 Github = "https://github.com/githuib/chromator"
 
 #[tool.uv.sources]
 #based-utils = { path = "../based-utils", editable = true }
 #
 [project.scripts]
-chromator = "chromator.cli:main"
+kleur = "kleur.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.3,<0.10.0"]
