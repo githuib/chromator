@@ -9,13 +9,13 @@ if TYPE_CHECKING:
 
 
 def _color_shade(color: Color) -> str:
-    return Colored(color.as_hex.center(8), color.contrasting_shade, color).formatted
+    return f"{Colored(color.as_hex.center(8), color.contrasting_shade, color)}"
 
 
 def _color_line(color: Color, name: str, shades: Iterable[float]) -> str:
     shades_str = "".join(_color_shade(color.shade(s)) for s in shades)
     hue = "   " if name == "grey" else f"{color.hue * 360:03.0f}"
-    return shades_str + Colored(f" {hue} {name}", color).formatted
+    return f"{shades_str}{Colored(f' {hue} {name}', color)}"
 
 
 def color_lines(color_theme: dict[str, Color], *, n_shades: int = 19) -> Iterator[str]:

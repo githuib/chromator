@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from based_utils.calx import InterpolationBounds, fractions, interpolate
+from based_utils.calx import LinearMapping, fractions, mapped
 from based_utils.cli import Colored
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 def _colored(s: str, color: Color) -> str:
-    return Colored(s, color.contrasting_shade, color).formatted
+    return str(Colored(s, color.contrasting_shade, color))
 
 
 def _css_color_comment(color: Color) -> str:
@@ -29,19 +29,19 @@ class ShadesParams:
 def _shades(
     c_dark: Color, c_bright: Color, *, params: ShadesParams
 ) -> list[tuple[Color, int]]:
-    old_li_dark, old_li_bright = c_dark.lightness, c_bright.lightness
-    li_dark = interpolate(params.dynamic_range, (old_li_dark, 0))
-    li_bright = interpolate(params.dynamic_range, (old_li_bright, 1))
-    dark, bright = c_dark.shade(li_dark), c_bright.shade(li_bright)
-    li_bounds = InterpolationBounds(li_dark, li_bright)
+    old_dark, old_bright = c_dark.lightness, c_bright.lightness
+    dark_shade = mapped(params.dynamic_range, (old_dark, 0))
+    bright_shade = mapped(params.dynamic_range, (old_bright, 1))
+    dark, bright = c_dark.shade(dark_shade), c_bright.shade(bright_shade)
+    shade_mapping = LinearMapping(dark_shade, bright_shade)
 
     def color_for_li(lightness: float) -> Color:
-        return dark.blend(bright, li_bounds.inverse_interpolate(lightness))
+        return dark.blend(bright, shade_mapping.position_of(lightness))
 
     shades = fractions(params.amount, inclusive=params.include_black_white)
     colors = [(color_for_li(li), 0) for li in shades]
     if params.include_input:
-        colors += [(color_for_li(old_li_dark), 1), (color_for_li(old_li_bright), 2)]
+        colors += [(color_for_li(old_dark), 1), (color_for_li(old_bright), 2)]
     return sorted(colors)
 
 
