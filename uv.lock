@@ -68,7 +68,7 @@ wheels = [
 
 [[package]]
 name = "kleur"
-version = "1.2.6"
+version = "1.2.7"
 source = { editable = "." }
 dependencies = [
     { name = "hsluv" },
