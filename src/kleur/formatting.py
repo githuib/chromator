@@ -118,11 +118,6 @@ class Colored:
     color: Color | None = None
     background: Color | None = None
 
-    @cached_property
-    def fmt(self) -> _StringStyler:
-        fg, bg = self.color, self.background
-        return color_rgb(fg.as_rgb if fg else None, bg.as_rgb if bg else None)
-
     def with_color(self, color: Color) -> Colored:
         return Colored(self.value, color, self.background)
 
@@ -135,7 +130,9 @@ class Colored:
 
     @cached_property
     def _formatted(self) -> str:
-        return self.fmt(self.raw)
+        fg, bg = self.color, self.background
+        fg_rgb, bg_rgb = fg.as_rgb if fg else None, bg.as_rgb if bg else None
+        return color_rgb(fg_rgb, bg_rgb)(self.raw)
 
     def __repr__(self) -> str:
         return self._formatted
