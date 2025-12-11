@@ -26,7 +26,9 @@ def _color_line(color: Color, name: str, shades: Iterable[float]) -> str:
     return f"{shades_str}{Colored(f' {hue} {name}', color)}"
 
 
-def color_lines(color_theme: dict[str, Color], *, n_shades: int = 19) -> Iterator[str]:
+def _color_lines(
+    color_theme: dict[str, Color], n_shades: int, n_sats: int
+) -> Iterator[str]:
     n = n_shades + 1
     shades = [i / n for i in range(1, n)]
 
@@ -34,12 +36,11 @@ def color_lines(color_theme: dict[str, Color], *, n_shades: int = 19) -> Iterato
     yield _color_line(ColorTheme.grey, "grey", shades)
 
     # Shade/hue tables for specific saturation values
-    num_saturations = 4
-    for i in range(1, num_saturations + 1):
+    for i in range(1, n_sats + 1):
         # Shade percentages row
         yield "".join(f"{s:.2%}".center(8) for s in shades)
         # Tables
-        saturation = i / num_saturations
+        saturation = i / n_sats
         for name, color in sorted(color_theme.items(), key=lambda p: p[1].hue):
             yield _color_line(color.adjust(saturation=saturation), name, shades)
 
@@ -65,10 +66,13 @@ class ColorsArgsParser(ArgsParser):
         self._parser.add_argument(
             "-n", "--num-shades", type=check_integer_in_range(1, 99), default=19
         )
+        self._parser.add_argument(
+            "-s", "--num-saturations", type=check_integer_in_range(1, 99), default=2
+        )
 
     def _run_command(self, args: Namespace) -> None:
         hues = {k: c(try_convert(int, h, default=333)) for k, h in args.color_hues}
         if args.merge_with_default_theme or not hues:
             theme_cls = AltColors if args.alt_default_theme else Colors
             hues = dict(get_class_vars(theme_cls, Color)) | hues
-        print_lines(color_lines(hues, n_shades=args.num_shades))
+        print_lines(_color_lines(hues, args.num_shades, args.num_saturations))

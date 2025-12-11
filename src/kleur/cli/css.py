@@ -11,6 +11,13 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
 
+@dataclass(frozen=True)
+class _ShadesParams:
+    amount: int = 19
+    dynamic_range: float = 0
+    include_black_and_white: bool = False
+    include_input: bool = False
+
 
 def _colored(s: str, color: Color) -> str:
     return str(Colored(s, color.contrasting_shade, color))
@@ -21,57 +28,43 @@ def _css_color_comment(color: Color) -> str:
 
 
 def _shades(
-    input_colors: tuple[Color, Color],
-    *,
-    dynamic_range: float = 0,
-    shades: Iterable[float],
-    include_input: bool = False,
-) -> list[tuple[Color, int]]:
+    input_colors: tuple[Color, Color], shades: Iterable[float], params: _ShadesParams
+) -> Iterator[tuple[Color, int]]:
     c_dark, c_bright = input_colors
     old_dark, old_bright = c_dark.lightness, c_bright.lightness
-    dark_shade = mapped(dynamic_range, (old_dark, 0))
-    bright_shade = mapped(dynamic_range, (old_bright, 1))
+    dark_shade = mapped(params.dynamic_range, (old_dark, 0))
+    bright_shade = mapped(params.dynamic_range, (old_bright, 1))
     dark, bright = c_dark.shade(dark_shade), c_bright.shade(bright_shade)
     shade_mapping = LinearMapping(dark_shade, bright_shade)
 
     def color_for_shade(lightness: float) -> Color:
         return dark.blend(bright, shade_mapping.position_of(lightness))
 
-    colors = [(color_for_shade(s), 0) for s in shades]
-    if include_input:
+    for s in shades:
+        yield color_for_shade(s), 0
+
+    if params.include_input:
         extra_colors = [color_for_shade(old_dark), color_for_shade(old_bright)]
-        if dynamic_range:
+        if params.dynamic_range:
             extra_colors += [dark, bright]
-        colors += [(c, i) for i, c in enumerate(extra_colors, 1)]
-    return sorted(colors)
-
-
-@dataclass(frozen=True)
-class ShadesParams:
-    amount: int = 19
-    dynamic_range: float = 0
-    include_black_and_white: bool = False
-    include_input: bool = False
+        for i, c in enumerate(extra_colors, 1):
+            yield c, i
 
 
 def _generate_colors(
-    c1: Color, c2: Color | None, params: ShadesParams
-) -> list[tuple[Color, int]]:
-    s, n = (0 if params.include_black_and_white else 1), (params.amount + 1)
-    shades = [li / n for li in range(s, n + 1 - s)]
+    c1: Color, c2: Color | None, params: _ShadesParams
+) -> Iterator[tuple[Color, int]]:
+    i, n = (0 if params.include_black_and_white else 1), (params.amount + 1)
+    shades = [li / n for li in range(i, n + 1 - i)]
 
     if c2:
-        return _shades(
-            (c1, c2),
-            dynamic_range=params.dynamic_range,
-            include_input=params.include_input,
-            shades=shades,
-        )
+        yield from _shades((c1, c2), shades, params)
 
-    colors = [(c1.shade(s), 0) for s in shades]
-    if params.include_input:
-        colors.append((c1, 1))
-    return sorted(colors)
+    else:
+        for s in shades:
+            yield c1.shade(s), 0
+        if params.include_input:
+            yield c1, 1
 
 
 def _css_lines(
@@ -101,14 +94,6 @@ def _css_lines(
         yield _colored(f"{var} {comment}", c_print)
 
 
-def shades_as_css_variables(
-    c1: Color, c2: Color | None, *, params: ShadesParams, label: str
-) -> Iterator[str]:
-    if c2 and c1 > c2:
-        c1, c2 = c2, c1
-    yield from _css_lines(c1, c2, _generate_colors(c1, c2, params), label)
-
-
 class CssArgsParser(ArgsParser):
     name = "css"
 
@@ -131,11 +116,17 @@ class CssArgsParser(ArgsParser):
 
     def _run_command(self, args: Namespace) -> None:
         c1 = Color.from_hex(args.color1)
-        c2 = Color.from_hex(args.color2) if args.color2 else None
-        params = ShadesParams(
+        if args.color2:
+            c2 = Color.from_hex(args.color2)
+            if c1 > c2:
+                c1, c2 = c2, c1
+        else:
+            c2 = None
+        params = _ShadesParams(
             args.amount,
             args.dynamic_range / 100,
             args.include_black_and_white,
             args.include_input_shades,
         )
-        print_lines(shades_as_css_variables(c1, c2, params=params, label=args.label))
+        colors = sorted(_generate_colors(c1, c2, params))
+        print_lines(_css_lines(c1, c2, colors, args.label))
