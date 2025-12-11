@@ -45,13 +45,13 @@ def _color_lines(
             yield _color_line(color.adjust(saturation=saturation), name, shades)
 
 
-class ColorsArgsParser(ArgsParser):
-    name = "colors"
+class ThemeArgsParser(ArgsParser):
+    name = "theme"
 
     def _parse_args(self) -> None:
         self._parser.add_argument(
             "-c",
-            "--color-hues",
+            "--colors",
             nargs="+",
             metavar="NAME=HUE (1-360)",
             type=parse_key_value_pair,
@@ -64,15 +64,15 @@ class ColorsArgsParser(ArgsParser):
             "-a", "--alt-default-theme", action="store_true", default=False
         )
         self._parser.add_argument(
-            "-n", "--num-shades", type=check_integer_in_range(1, 99), default=19
+            "-s", "--number-of-shades", type=check_integer_in_range(1, 99), default=9
         )
         self._parser.add_argument(
-            "-s", "--num-saturations", type=check_integer_in_range(1, 99), default=2
+            "-v", "--number-of-vibrances", type=check_integer_in_range(1, 99), default=2
         )
 
     def _run_command(self, args: Namespace) -> None:
-        hues = {k: c(try_convert(int, h, default=333)) for k, h in args.color_hues}
+        hues = {k: c(try_convert(int, h, default=333)) for k, h in args.colors}
         if args.merge_with_default_theme or not hues:
             theme_cls = AltColors if args.alt_default_theme else Colors
             hues = dict(get_class_vars(theme_cls, Color)) | hues
-        print_lines(_color_lines(hues, args.num_shades, args.num_saturations))
+        print_lines(_color_lines(hues, args.number_of_shades, args.number_of_vibrances))

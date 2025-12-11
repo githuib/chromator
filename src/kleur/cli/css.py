@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from kleur import Color, Colored
@@ -11,29 +10,42 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
 
-@dataclass(frozen=True)
-class _ShadesParams:
-    amount: int = 19
-    dynamic_range: float = 0
-    include_black_and_white: bool = False
-    include_input: bool = False
-
-
-def _colored(s: str, color: Color) -> str:
-    return str(Colored(s, color.contrasting_shade, color))
-
-
-def _css_color_comment(color: Color) -> str:
-    return _colored(f"#{color.as_hex} --> {color}", color)
-
-
-def _shades(
-    input_colors: tuple[Color, Color], shades: Iterable[float], params: _ShadesParams
+def _shades_1(
+    input_color: Color,
+    shades: Iterable[float],
+    include_input: bool,  # noqa: FBT001
 ) -> Iterator[tuple[Color, int]]:
+    """Generate shades of a color."""
+    for s in shades:
+        yield input_color.shade(s), 0
+    if include_input:
+        yield input_color, 1
+
+
+def _shades_2(
+    input_colors: tuple[Color, Color],
+    shades: Iterable[float],
+    dynamic_range: float,
+    include_input: bool,  # noqa: FBT001
+) -> Iterator[tuple[Color, int]]:
+    """
+    Generate shades based on two colors.
+
+    The dynamic range specifies to what degree the hue
+    of the input colors will be used as boundaries:
+    - dynamic range 0 (0%):
+        The shades will interpolate (or extrapolate) between the input colors
+    - dynamic range between 0 and 1 (between 0% and 100%):
+        The shades will interpolate (or extrapolate) between
+        darker / brighter shades of the input colors
+    - dynamic range 1 (100%):
+        The shades will interpolate (or extrapolate) between
+        the darkest & brightest shades of the input colors
+    """
     c_dark, c_bright = input_colors
     old_dark, old_bright = c_dark.lightness, c_bright.lightness
-    dark_shade = mapped(params.dynamic_range, (old_dark, 0))
-    bright_shade = mapped(params.dynamic_range, (old_bright, 1))
+    dark_shade = mapped(dynamic_range, (old_dark, 0))
+    bright_shade = mapped(dynamic_range, (old_bright, 1))
     dark, bright = c_dark.shade(dark_shade), c_bright.shade(bright_shade)
     shade_mapping = LinearMapping(dark_shade, bright_shade)
 
@@ -43,28 +55,20 @@ def _shades(
     for s in shades:
         yield color_for_shade(s), 0
 
-    if params.include_input:
+    if include_input:
         extra_colors = [color_for_shade(old_dark), color_for_shade(old_bright)]
-        if params.dynamic_range:
+        if dynamic_range:
             extra_colors += [dark, bright]
         for i, c in enumerate(extra_colors, 1):
             yield c, i
 
 
-def _generate_colors(
-    c1: Color, c2: Color | None, params: _ShadesParams
-) -> Iterator[tuple[Color, int]]:
-    i, n = (0 if params.include_black_and_white else 1), (params.amount + 1)
-    shades = [li / n for li in range(i, n + 1 - i)]
+def _colored(s: str, color: Color) -> str:
+    return str(Colored(s, color.contrasting_shade, color))
 
-    if c2:
-        yield from _shades((c1, c2), shades, params)
 
-    else:
-        for s in shades:
-            yield c1.shade(s), 0
-        if params.include_input:
-            yield c1, 1
+def _css_color_comment(color: Color) -> str:
+    return _colored(f"#{color.as_hex} --> {color}", color)
 
 
 def _css_lines(
@@ -102,7 +106,7 @@ class CssArgsParser(ArgsParser):
         self._parser.add_argument("-c", "--color1", type=str, required=True)
         self._parser.add_argument("-k", "--color2", type=str)
         self._parser.add_argument(
-            "-n", "--amount", type=check_integer_in_range(1, 99), default=19
+            "-s", "--number-of-shades", type=check_integer_in_range(1, 99), default=19
         )
         self._parser.add_argument(
             "-b", "--include-black-and-white", action="store_true", default=False
@@ -122,11 +126,13 @@ class CssArgsParser(ArgsParser):
                 c1, c2 = c2, c1
         else:
             c2 = None
-        params = _ShadesParams(
-            args.amount,
-            args.dynamic_range / 100,
-            args.include_black_and_white,
-            args.include_input_shades,
+
+        inc_i, inc_bw = args.include_input_shades, args.include_black_and_white
+        s, i, d = (args.number_of_shades, 0 if inc_bw else 1, args.dynamic_range / 100)
+        shades = [li / (s + 1) for li in range(i, s + 2 - i)]
+        colors = (
+            _shades_1(c1, shades, inc_i)
+            if not c2
+            else _shades_2((c1, c2), shades, d, inc_i)
         )
-        colors = sorted(_generate_colors(c1, c2, params))
-        print_lines(_css_lines(c1, c2, colors, args.label))
+        print_lines(_css_lines(c1, c2, sorted(colors), args.label))
