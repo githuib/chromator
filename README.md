@@ -35,38 +35,23 @@ options:
 ```commandline
 $ uv run kleur theme -s 7
 ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/colors/default.png "kleur theme -s 7")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/default.png "kleur theme -s 7")
 
 #### Preview custom theme
 
 ```commandline
 $ kleur theme -s 7 -c green=133 blue=257 tomato=20
  ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/colors/custom.png "kleur theme -s 7 -c green=133 blue=257 tomato=20")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/custom.png "kleur theme -s 7 -c green=133 blue=257 tomato=20")
 
 #### Preview custom theme merged with default theme
 
 ```commandline
 $ kleur theme -s 7 -c green=133 blue=257 tomato=20 -m
  ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/colors/merged.png "kleur theme -s 7 -c green=133 blue=257 tomato=20 -m")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/merged.png "kleur theme -s 7 -c green=133 blue=257 tomato=20 -m")
 
 ### Generate shades (as CSS variables), based one 1 or 2 (hex) colors
-
-The dynamic range specifies to what degree the hue of the input colors will be used as boundaries:
-
-- dynamic range 0 (0%):
-
-  *The shades will interpolate (or extrapolate) between the input colors*
-
-- dynamic range between 0 and 1 (between 0% and 100%):
-
-  *The shades will interpolate (or extrapolate) between darker / brighter shades of the input colors*
-
-- dynamic range 1 (100%):
-
-  *The shades will interpolate (or extrapolate) between the darkest & brightest shades of the input colors*
-
 
 #### General help
 
@@ -84,28 +69,42 @@ options:
   -d, --dynamic-range DYNAMIC_RANGE
 ```
 
-#### Shades as CSS variables, based on one input color
+#### Based on one input color
 
 ```commandline
 $ kleur css doodle -c d00d1e -s 9
 ```
 ![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/single.png "kleur css doodle -c d00d1e -s 9 -i")
 
-#### Shades as CSS variables, based on one input color (with input markers)
+With input markers:
 
 ```commandline
 $ kleur css doodle -c d00d1e -s 9 -i
 ```
 ![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/single_input.png "kleur css doodle -c d00d1e -s 9 -i")
 
-#### Shades as CSS variables, based on two input colors
+#### Based on two input colors
+
+The dynamic range specifies to what degree the hue of the input colors will be used as boundaries:
+
+- Dynamic range 0 (0%):
+
+  *The shades will interpolate (or extrapolate) between the input colors.*
+
+- Dynamic range between 0 and 1 (between 0% and 100%):
+
+  *The shades will interpolate (or extrapolate) between darker / brighter shades of the input colors.*
+
+- Dynamic range 1 (100%):
+
+  *The shades will interpolate between the darkest & brightest shades of the input colors.*
 
 ```commandline
 $ kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 66
 ```
 ![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double.png "kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 66")
 
-#### Shades as CSS variables, based on two input colors (with input markers)
+With input markers, varying in dynamic range:
 
 ```commandline
 $ kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 0 -i
