@@ -11,6 +11,10 @@ def trim(n: float, lower: float = 0, upper: float = 1) -> float:
     return min(max(lower, n), upper)
 
 
+def trim_cyclic(n: float, period: float = 1) -> float:
+    return n % period
+
+
 class _MappingBounds:
     def __init__(self, start: float = 0, end: float = 1) -> None:
         self._start = start
@@ -52,7 +56,8 @@ class CyclicMapping(_MappingBounds):
     def __init__(
         self, start: float = 0, end: float = FULL_CIRCLE, period: float = FULL_CIRCLE
     ) -> None:
-        start, end = start % period, end % period
+        self._period = period
+        start, end = self._trim(start), self._trim(end)
 
         # To ensure interpolation over the smallest angle,
         # phase shift {start} over whole periods, such that the
@@ -71,13 +76,15 @@ class CyclicMapping(_MappingBounds):
             start += period if start < end else -period
 
         super().__init__(start, end)
-        self._period = period
+
+    def _trim(self, n: float) -> float:
+        return n % self._period
 
     def value_at(self, f: float) -> float:
-        return super().value_at(f) % self._period
+        return self._trim(super().value_at(f))
 
     def position_of(self, n: float) -> float:
-        return super().position_of(n % self._period)
+        return super().position_of(self._trim(n))
 
 
 def mapped(f: float, bounds: _Bounds) -> float:

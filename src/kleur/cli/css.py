@@ -1,13 +1,15 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from kleur import Colored
+from kleur import Color, Colored
 from kleur.interpol import LinearMapping, mapped
 
+from .utils import ArgsParser, check_integer_in_range, print_lines
+
 if TYPE_CHECKING:
+    from argparse import Namespace
     from collections.abc import Iterable, Iterator
 
-    from kleur import Color
 
 
 def _colored(s: str, color: Color) -> str:
@@ -48,14 +50,14 @@ def _shades(
 class ShadesParams:
     amount: int = 19
     dynamic_range: float = 0
-    include_black_white: bool = False
+    include_black_and_white: bool = False
     include_input: bool = False
 
 
 def _generate_colors(
     c1: Color, c2: Color | None, params: ShadesParams
 ) -> list[tuple[Color, int]]:
-    s, n = (0 if params.include_black_white else 1), (params.amount + 1)
+    s, n = (0 if params.include_black_and_white else 1), (params.amount + 1)
     shades = [li / n for li in range(s, n + 1 - s)]
 
     if c2:
@@ -105,3 +107,35 @@ def shades_as_css_variables(
     if c2 and c1 > c2:
         c1, c2 = c2, c1
     yield from _css_lines(c1, c2, _generate_colors(c1, c2, params), label)
+
+
+class CssArgsParser(ArgsParser):
+    name = "css"
+
+    def _parse_args(self) -> None:
+        self._parser.add_argument("-l", "--label", type=str, default="color")
+        self._parser.add_argument("-c", "--color1", type=str, required=True)
+        self._parser.add_argument("-k", "--color2", type=str)
+        self._parser.add_argument(
+            "-n", "--amount", type=check_integer_in_range(1, 99), default=19
+        )
+        self._parser.add_argument(
+            "-b", "--include-black-and-white", action="store_true", default=False
+        )
+        self._parser.add_argument(
+            "-i", "--include-input-shades", action="store_true", default=False
+        )
+        self._parser.add_argument(
+            "-d", "--dynamic-range", type=check_integer_in_range(0, 100), default=0
+        )
+
+    def _run_command(self, args: Namespace) -> None:
+        c1 = Color.from_hex(args.color1)
+        c2 = Color.from_hex(args.color2) if args.color2 else None
+        params = ShadesParams(
+            args.amount,
+            args.dynamic_range / 100,
+            args.include_black_and_white,
+            args.include_input_shades,
+        )
+        print_lines(shades_as_css_variables(c1, c2, params=params, label=args.label))

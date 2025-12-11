@@ -1,9 +1,13 @@
 from dataclasses import astuple, dataclass, replace
 from functools import cached_property, total_ordering
+from typing import TYPE_CHECKING
 
 from hsluv import hex_to_hsluv, hsluv_to_hex, hsluv_to_rgb, rgb_to_hsluv
 
-from .interpol import mapped, mapped_cyclic, trim
+from .interpol import mapped, mapped_cyclic, trim, trim_cyclic
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _INCREASE_FACTOR = 2**0.5
 
@@ -85,20 +89,34 @@ class _HSLuv:
         return round(r * 255), round(g * 255), round(b * 255)
 
 
+@total_ordering
 @dataclass(frozen=True)
-class _Color:
-    """Party trick to allow __post_init__() to set the attributes."""
-
+class Color:
     hue: float = 0  # 0 - 1 (full circle angle)
     saturation: float = 1  # 0 - 1 (ratio)
     lightness: float = 0.5  # 0 - 1 (ratio)
 
-
-@total_ordering
-@dataclass(frozen=True)
-class Color(_Color):
     def __post_init__(self) -> None:
-        super().__init__(self.hue % 1, trim(self.saturation), trim(self.lightness))
+        self._normalize_values()
+
+    def _normalize_values(self) -> None:
+        """
+        Make sure all color values are in a valid range.
+
+        object.__setattr__() is one of the awkward options (*) we have,
+        when we want to set attributes in a frozen dataclass (which will raise a
+        FrozenInstanceError when its own __setattr__() or __delattr__() is invoked).
+
+        *) Another option could be to move the attributes to a super class and
+        call super().__init__() here.
+        """
+        funcs: dict[str, Callable[[float], float]] = {
+            "hue": trim_cyclic,
+            "saturation": trim,
+            "lightness": trim,
+        }
+        for name, func in funcs.items():
+            object.__setattr__(self, name, func(getattr(self, name)))
 
     def __repr__(self) -> str:
         return repr(self._as_hsluv)
@@ -108,6 +126,7 @@ class Color(_Color):
 
     @cached_property
     def as_sortable_tuple(self) -> tuple[float, float, float]:
+        """Will decide the sort order."""
         return self.lightness, self.saturation, self.hue
 
     @classmethod
