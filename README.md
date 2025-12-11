@@ -4,6 +4,9 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/kleur)](https://pypi.org/project/kleur/#history)
 [![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/kleur)](https://pypi.org/project/kleur)
 
+I'd like to give special credits to [Alexei Boronine](https://github.com/boronine) and everyone else who contributed to the [HSLuv](https://www.hsluv.org/) project.
+This work provided the fundaments to build this package on (and is the only dependency used in it).
+
 ## Installation
 
 ```commandline
