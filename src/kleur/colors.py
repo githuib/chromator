@@ -65,10 +65,7 @@ class _HSLuv:
     lightness: float
 
     def __repr__(self) -> str:
-        hue = f"hue={self.hue:.2f}°"
-        saturation = f"saturation={self.saturation:.2f}%"
-        lightness = f"lightness={self.lightness:.2f}%"
-        return f"Color({hue}, {saturation}, {lightness})"
+        return f"HSLuv({self.hue:.2f}°, {self.saturation:.2f}%, {self.lightness:.2f}%)"
 
     @classmethod
     def from_hex(cls, rgb_hex: str) -> _HSLuv:
@@ -314,9 +311,9 @@ class ColorTheme:
     ...     tomato = c(15)
     ...     turquoise = c(175)
     >>> MyColors.tomato
-    Color(hue=15.00°, saturation=100.00%, lightness=50.00%)
+    HSLuv(15.00°, 100.00%, 50.00%)
     >>> MyColors.grey
-    Color(hue=0.00°, saturation=0.00%, lightness=50.00%)
+    HSLuv(0.00°, 0.00%, 50.00%)
     """
 
     grey = Color(saturation=0)
