@@ -12,6 +12,22 @@ if TYPE_CHECKING:
 _INCREASE_FACTOR = 2**0.5
 
 
+class HasNormalizeArgs:
+    def _normalize_values(self, funcs: dict[str, Callable[[float], float]]) -> None:
+        """
+        Make sure all color values are in a valid range.
+
+        object.__setattr__() is one of the awkward options (*) we have,
+        when we want to set attributes in a frozen dataclass (which will raise a
+        FrozenInstanceError when its own __setattr__() or __delattr__() is invoked).
+
+        *) Another option could be to move the attributes to a super class and
+        call super().__init__() here.
+        """
+        for name, func in funcs.items():
+            object.__setattr__(self, name, func(getattr(self, name)))
+
+
 def normalize_rgb_hex(rgb_hex: str) -> str:
     """
     Try to normalize a hex string into a rrggbb hex.
@@ -88,32 +104,24 @@ class _HSLuv:
 
 @total_ordering
 @dataclass(frozen=True)
-class Color:
+class Color(HasNormalizeArgs):
     hue: float = 0  # 0 - 1 (full circle angle)
     saturation: float = 1  # 0 - 1 (ratio)
     lightness: float = 0.5  # 0 - 1 (ratio)
 
     def __post_init__(self) -> None:
-        self._normalize_values()
+        self._normalize_values(
+            {"hue": trim_cyclic, "saturation": trim, "lightness": trim}
+        )
 
-    def _normalize_values(self) -> None:
-        """
-        Make sure all color values are in a valid range.
-
-        object.__setattr__() is one of the awkward options (*) we have,
-        when we want to set attributes in a frozen dataclass (which will raise a
-        FrozenInstanceError when its own __setattr__() or __delattr__() is invoked).
-
-        *) Another option could be to move the attributes to a super class and
-        call super().__init__() here.
-        """
-        funcs: dict[str, Callable[[float], float]] = {
-            "hue": trim_cyclic,
-            "saturation": trim,
-            "lightness": trim,
-        }
-        for name, func in funcs.items():
-            object.__setattr__(self, name, func(getattr(self, name)))
+    def adjust(
+        self, *, hue: float = None, saturation: float = None, lightness: float = None
+    ) -> Color:
+        return Color(
+            self.hue + (hue or 0),
+            self.saturation * (saturation or 1),
+            self.lightness * (lightness or 1),
+        )
 
     def __repr__(self) -> str:
         return repr(self._as_hsluv)
@@ -184,20 +192,14 @@ class Color:
     def as_rgb(self) -> RGB:
         return self._as_hsluv.as_rgb
 
-    def adjust(
-        self, *, hue: float = None, saturation: float = None, lightness: float = None
-    ) -> Color:
-        return Color(
-            self.hue + (hue or 0),
-            self.saturation * (saturation or 1),
-            self.lightness * (lightness or 1),
-        )
-
-    def shade(self, lightness: float) -> Color:
-        return replace(self, lightness=lightness)
+    def shifted(self, hue: float) -> Color:
+        return replace(self, hue=hue)
 
     def saturated(self, saturation: float) -> Color:
         return replace(self, saturation=saturation)
+
+    def shade(self, lightness: float) -> Color:
+        return replace(self, lightness=lightness)
 
     @cached_property
     def very_bright(self) -> Color:
