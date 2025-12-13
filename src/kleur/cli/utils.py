@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, ClassVar, overload
 
 if TYPE_CHECKING:
     from argparse import Namespace
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterable
 
 
 def check_integer(v: str, *, conditions: Callable[[int], bool] = None) -> int:
@@ -59,10 +59,12 @@ def try_convert[T, R](cls: Callable[[T], R], val: T, *, default: R = None) -> R 
         return default
 
 
-def get_class_vars[T](cls: type, value_type: type[T]) -> Iterator[tuple[str, T]]:
-    for k, c in cls.__dict__.items():
-        if not k.startswith("_") and isinstance(c, value_type):
-            yield k, c
+def get_class_vars[T](cls: type, value_type: type[T]) -> dict[str, T]:
+    return {
+        name: v
+        for name, v in cls.__dict__.items()
+        if not name.startswith("_") and isinstance(v, value_type)
+    }
 
 
 class ArgsParser(ABC):
