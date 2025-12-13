@@ -11,13 +11,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-def _colored(s: str, color: Color, *, flipped: bool = False) -> str:
-    c, k = color, color.contrasting_shade
-    return str(Colored(s, *((c, k) if flipped else (k, c))))
-
-
-def _css_color_comment(color: Color, *, flipped: bool = False) -> str:
-    return _colored(f"#{color.as_hex} --> {color}", color, flipped=flipped)
+def _css_color_comment(color: Color) -> Colored:
+    return Colored(f"#{color.as_hex} --> {color}", color, color.contrasting_shade)
 
 
 class LinesGenerator(ABC):
@@ -41,20 +36,18 @@ class LinesGenerator(ABC):
         yield from self._comment_lines()
         yield "*/"
 
-        colors: dict[int, tuple[Color, str]] = {}
-        for color, input_indication in self._colors():
-            n = round(color.lightness * 100)
-            if n not in colors:
-                colors[n] = color, input_indication
-
-        generated = sorted(colors.items())
-        n_max, _ = generated[-1]
+        colors = {f"{c.lightness * 100:.0f}": (c, i) for c, i in self._colors()}
+        sorted_colors = sorted(colors.items())
+        n_max, _ = sorted_colors[-1]
         n_digits = len(str(n_max))
-        for n, (color, input_indication) in generated:
-            has_ind = input_indication != ""
-            i = f" <-- {input_indication}" if has_ind else ""
-            css_var = f"--{self._label}-{str(n).zfill(n_digits)}: #{color.as_hex};"
-            yield _colored(f"{css_var} /* --> {color}{i} */", color, flipped=has_ind)
+        for n, (color, input_indication) in sorted_colors:
+            css_var = f"--{self._label}-{n.zfill(n_digits)}: #{color.as_hex};"
+            comment = f"--> {color}"
+            if input_indication:
+                comment += f" <-- {input_indication}"
+            k = color.contrasting_shade
+            fg, bg = (color, k) if input_indication else (k, color)
+            yield str(Colored(f"{css_var} /* {comment} */", fg, bg))
 
 
 class LinesGeneratorOneColor(LinesGenerator):
@@ -67,10 +60,10 @@ class LinesGeneratorOneColor(LinesGenerator):
 
     def _colors(self) -> Iterator[tuple[Color, str]]:
         """Generate shades of a color."""
-        if self._include_input:
-            yield self._input, "input"
         for s in self._shades:
             yield self._input.shade(s), ""
+        if self._include_input:
+            yield self._input, "input"
 
 
 def normalize_color(c1: Color, c2: Color) -> Color:
@@ -81,10 +74,10 @@ class LinesGeneratorTwoColors(LinesGenerator):
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._dynamic_range = args.dynamic_range / 100
-        c1, c2 = sorted(Color.from_hex(h) for h in (args.color1, args.color2))
+        c1, c2 = Color.from_hex(args.color1), Color.from_hex(args.color2)
         c1 = normalize_color(c1, c2)
         c2 = normalize_color(c2, c1)
-        self._dark_input, self._bright_input = c1, c2
+        self._dark_input, self._bright_input = sorted((c1, c2))
 
     def _comment_lines(self) -> Iterator[str]:
         yield "Based on:"
@@ -119,16 +112,19 @@ class LinesGeneratorTwoColors(LinesGenerator):
         def blend(lightness: float) -> Color:
             return new_dark.blend(new_bright, shade_mapping.position_of(lightness))
 
-        if self._include_input:
-            input_indication = "same {} as {} input"
-            yield blend(old_dark_shade), input_indication.format("shade", "darkest")
-            yield blend(old_bright_shade), input_indication.format("shade", "brightest")
-            if self._dynamic_range:
-                yield new_dark, input_indication.format("hue", "darkest")
-                yield new_bright, input_indication.format("hue", "brightest")
-
         for s in self._shades:
             yield blend(s), ""
+
+        if self._include_input:
+            i = "same {} as {} input"
+
+            yield blend(old_dark_shade), i.format("shade", "darkest")
+            if old_dark_shade != new_dark_shade:
+                yield new_dark, i.format("hue", "darkest")
+
+            yield blend(old_bright_shade), i.format("shade", "brightest")
+            if old_bright_shade != new_bright_shade:
+                yield new_bright, i.format("hue", "brightest")
 
 
 class CssArgsParser(ArgsParser):
