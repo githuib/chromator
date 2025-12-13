@@ -12,20 +12,20 @@ if TYPE_CHECKING:
 _INCREASE_FACTOR = 2**0.5
 
 
-def _normalize_rgb_hex(rgb_hex: str) -> str:
+def normalize_rgb_hex(rgb_hex: str) -> str:
     """
     Try to normalize a hex string into a rrggbb hex.
 
     :param rgb_hex: RGB hex string (may start with '#')
     :return: rrggbb hex
 
-    >>> _normalize_rgb_hex("3")
+    >>> normalize_rgb_hex("3")
     '333333'
-    >>> _normalize_rgb_hex("03")
+    >>> normalize_rgb_hex("03")
     '030303'
-    >>> _normalize_rgb_hex("303")
+    >>> normalize_rgb_hex("303")
     '330033'
-    >>> _normalize_rgb_hex("808303")
+    >>> normalize_rgb_hex("808303")
     '808303'
     """
     rgb_hex, r, g, b = rgb_hex.removeprefix("#").lower(), "", "", ""
@@ -153,7 +153,7 @@ class Color:
         >>> c2.as_rgb
         (0, 170, 255)
         """
-        return cls._from_hsluv(_HSLuv.from_hex(_normalize_rgb_hex(rgb_hex)))
+        return cls._from_hsluv(_HSLuv.from_hex(normalize_rgb_hex(rgb_hex)))
 
     @cached_property
     def as_hex(self) -> str:
@@ -294,62 +294,3 @@ class Color:
         '00b8d1'
         """
         return self.adjust(hue=0.5)
-
-
-def c(h: int) -> Color:
-    return Color(h / 360)
-
-
-@dataclass(frozen=True)
-class ColorTheme:
-    """
-    Helper class to make a Colors class return Color objects.
-
-    Can be overridden by specifying a custom anum with
-    a different set of hues (in degrees):
-    >>> class MyColors(ColorTheme):
-    ...     tomato = c(15)
-    ...     turquoise = c(175)
-    >>> MyColors.tomato
-    HSLuv(15.00°, 100.00%, 50.00%)
-    >>> MyColors.grey
-    HSLuv(0.00°, 0.00%, 50.00%)
-    """
-
-    grey = Color(saturation=0)
-    black = grey.shade(0)
-    white = grey.shade(1)
-
-
-class Colors(ColorTheme):
-    """Highly opinionated (though carefully selected) color theme."""
-
-    red = c(12)
-    orange = c(33)
-    yellow = c(69)
-    poison = c(101)
-    green = c(127)
-    ocean = c(190)
-    blue = c(248)
-    indigo = c(267)
-    purple = c(281)
-    pink = c(329)
-
-    brown = orange.blend(yellow, 0.25).saturated(0.5)
-
-
-class AltColors(ColorTheme):
-    """Alternative color theme."""
-
-    red = c(10)
-    orange = c(35)
-    yellow = c(75)
-    poison = c(100)
-    green = c(126)
-    ocean = c(184)
-    blue = c(242)
-    indigo = c(268)
-    purple = c(280)
-    pink = c(325)
-
-    brown = orange.blend(yellow, 0.3).saturated(0.5)
