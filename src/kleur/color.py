@@ -1,6 +1,6 @@
 from dataclasses import astuple, dataclass, replace
 from functools import cached_property, total_ordering
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from hsluv import hex_to_hsluv, hsluv_to_hex, hsluv_to_rgb, rgb_to_hsluv
 
@@ -80,9 +80,6 @@ class _HSLuv:
     saturation: float
     lightness: float
 
-    def __repr__(self) -> str:
-        return f"HSLuv({self.hue:.2f}°, {self.saturation:.2f}%, {self.lightness:.2f}%)"
-
     @classmethod
     def from_hex(cls, rgb_hex: str) -> _HSLuv:
         return cls(*hex_to_hsluv(f"#{rgb_hex}"))
@@ -100,6 +97,9 @@ class _HSLuv:
     def as_rgb(self) -> RGB:
         r, g, b = hsluv_to_rgb(astuple(self))
         return round(r * 255), round(g * 255), round(b * 255)
+
+
+type ColorProp = Literal["hue", "saturation", "lightness"]
 
 
 @total_ordering
@@ -123,8 +123,16 @@ class Color(HasNormalizeArgs):
             self.lightness * (lightness or 1),
         )
 
+    @cached_property
+    def prop_strings(self) -> dict[ColorProp, str]:
+        return {
+            "hue": f"{self.hue * 360:.2f}°",
+            "saturation": f"{self.saturation:.2%}",
+            "lightness": f"{self.lightness:.2%}",
+        }
+
     def __repr__(self) -> str:
-        return repr(self._as_hsluv)
+        return f"HSLuv({', '.join(self.prop_strings.values())})"
 
     def __lt__(self, other: Color) -> bool:
         return self.as_sortable_tuple < other.as_sortable_tuple

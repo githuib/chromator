@@ -1,9 +1,8 @@
 import os
 import re
 import sys
-from dataclasses import dataclass
-from functools import cache, cached_property
-from typing import TYPE_CHECKING
+from functools import cache
+from typing import TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -112,30 +111,20 @@ def color_rgb(fg: RGB = None, bg: RGB = None) -> _StringStyler:
     return _wrap_ansi_style(*values)
 
 
-@dataclass(frozen=True)
-class Colored:
-    value: object
-    color: Color | None = None
-    background: Color | None = None
+class Colored[T](str):
+    value: T
+    bg: Color | None
+    fg: Color | None
+    __slots__ = "bg", "fg", "value"
+
+    def __new__(cls, value: T, fg: Color = None, bg: Color = None) -> Self:
+        fg_rgb, bg_rgb = fg.as_rgb if fg else None, bg.as_rgb if bg else None
+        instance = super().__new__(cls, color_rgb(fg_rgb, bg_rgb)(str(value)))
+        instance.value, instance.fg, instance.bg = (value, fg, bg)
+        return instance
 
     def with_color(self, color: Color) -> Colored:
-        return Colored(self.value, color, self.background)
+        return Colored(self.value, color, self.bg)
 
     def with_background(self, background: Color) -> Colored:
-        return Colored(self.value, self.color, background)
-
-    @cached_property
-    def raw(self) -> str:
-        return str(self.value)
-
-    @cached_property
-    def _formatted(self) -> str:
-        fg, bg = self.color, self.background
-        fg_rgb, bg_rgb = fg.as_rgb if fg else None, bg.as_rgb if bg else None
-        return color_rgb(fg_rgb, bg_rgb)(self.raw)
-
-    def __repr__(self) -> str:
-        return self._formatted
-
-    def __len__(self) -> int:
-        return len(self.raw)
+        return Colored(self.value, self.fg, background)

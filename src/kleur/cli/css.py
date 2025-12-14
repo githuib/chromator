@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from math import log10
 from typing import TYPE_CHECKING
 
@@ -9,14 +10,41 @@ from .utils import ArgsParser, check_integer_in_range, print_lines
 
 if TYPE_CHECKING:
     from argparse import Namespace
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
+
+    from kleur.color import ColorProp
 
 
-def _css_color_comment(color: Color) -> Colored:
-    return Colored(f"#{color.as_hex} --> {color}", color, color.contrasting_shade)
+@dataclass(frozen=True)
+class Indicator:
+    side: str = ""
+    props: set[ColorProp] = field(default_factory=set)
+
+
+def _colored(color: Color) -> Callable[[str], str]:
+    def wrapped(s: str) -> str:
+        return Colored(s, color.contrasting_shade, color)
+
+    return wrapped
+
+
+def _colored_props(color: Color, indicator: set[ColorProp]) -> Iterator[str]:
+    h_str, s_str, l_str = color.prop_strings.values()
+    i_hue, i_sat, i_li = [p in indicator for p in color.prop_strings]
+
+    c_hue = Color(color.hue, lightness=0.5)
+    yield _colored(c_hue)(h_str) if i_hue else h_str
+
+    c_sat = c_hue.saturated(color.saturation)
+    yield _colored(c_sat)(s_str) if i_sat else s_str
+
+    c_li = c_sat.shade(color.lightness)
+    yield _colored(c_li)(l_str) if i_li else l_str
 
 
 class LinesGenerator(ABC):
+    _input_colors: dict[str, Color]
+
     def __init__(self, args: Namespace) -> None:
         self._include_input = args.include_input_shades
         self._include_bw = args.include_black_and_white
@@ -26,11 +54,14 @@ class LinesGenerator(ABC):
         self._shades = [s / steps for s in range(*shades_range)]
         self._generated_shades: set[int] = set()
 
-    @abstractmethod
-    def _comment_lines(self) -> Iterator[str]: ...
+    def _comment_lines(self) -> Iterator[str]:
+        yield "Based on:"
+        for side, color in self._input_colors.items():
+            side_str = f"{side.capitalize()}:"
+            yield f"- {side_str:<10} {_colored(color)(f'#{color.as_hex}')} --> {color}"
 
     @abstractmethod
-    def _colors(self) -> Iterator[tuple[Color, str]]: ...
+    def _colors(self) -> Iterator[tuple[Color, Indicator]]: ...
 
     def lines(self) -> Iterator[str]:
         yield "/*"
@@ -38,32 +69,37 @@ class LinesGenerator(ABC):
         yield "*/"
 
         colors = {round(c.lightness * 100): (c, i) for c, i in self._colors()}
-        sorted_colors = sorted(colors.items())
-        s_max, _ = sorted_colors[-1]
-        n_digits = int(log10(s_max)) + 1
-        for s, (c, input_indication) in sorted_colors:
-            css_var = f"--{self._label}-{str(s).zfill(n_digits)}: #{c.as_hex};"
-            i = f" <-- {input_indication}" if input_indication else ""
-            line = f"{css_var} /* --> {c}{i} */"
-            k = c.contrasting_shade
-            yield str(Colored(line, *((c, k) if input_indication else (k, c))))
+        n_digits = int(log10(max(colors.keys()))) + 1
+        for s, (c, i) in sorted(colors.items()):
+            cf = _colored(c)
+
+            css_var = cf(f"--{self._label}-{str(s).zfill(n_digits)}: #{c.as_hex};")
+
+            comment = f" --> HSLuv({', '.join(_colored_props(c, i.props))})"
+            if i.side:
+                p_str = {1: next(iter(i.props)), 2: " & ".join(i.props), 3: "color"}
+                side = _colored(self._input_colors[i.side])(f"{i.side} input")
+                comment += f" <-- same {p_str[len(i.props)]} as {side}"
+
+            yield f"{css_var} /* {comment} */"
 
 
 class LinesGeneratorOneColor(LinesGenerator):
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._input_color = Color.from_hex(args.color1)
+        self._input_colors = {"input": self._input_color}
 
-    def _comment_lines(self) -> Iterator[str]:
-        yield f"Based on: {_css_color_comment(self._input_color)}"
-
-    def _colors(self) -> Iterator[tuple[Color, str]]:
+    def _colors(self) -> Iterator[tuple[Color, Indicator]]:
         """Generate shades of a color."""
         for s in self._shades:
-            yield self._input_color.shade(s), ""
+            yield self._input_color.shade(s), Indicator()
 
         if self._include_input:
-            yield self._input_color, "input"
+            yield (
+                self._input_color,
+                Indicator("input", {"hue", "saturation", "lightness"}),
+            )
 
 
 def normalize_color(c1: Color, c2: Color) -> Color:
@@ -77,15 +113,10 @@ class LinesGeneratorTwoColors(LinesGenerator):
         c1, c2 = Color.from_hex(args.color1), Color.from_hex(args.color2)
         c1 = normalize_color(c1, c2)
         c2 = normalize_color(c2, c1)
-        self._input_colors = sorted((c1, c2))
+        self._dark, self._bright = sorted((c1, c2))
+        self._input_colors = {"darkest": self._dark, "brightest": self._bright}
 
-    def _comment_lines(self) -> Iterator[str]:
-        dark, bright = [_css_color_comment(c) for c in self._input_colors]
-        yield "Based on:"
-        yield f"- Darkest:   {dark}"
-        yield f"- Brightest: {bright}"
-
-    def _colors(self) -> Iterator[tuple[Color, str]]:
+    def _colors(self) -> Iterator[tuple[Color, Indicator]]:
         """
         Generate shades based on two colors.
 
@@ -102,7 +133,7 @@ class LinesGeneratorTwoColors(LinesGenerator):
         """
         dark, bright = mapping_colors = [
             c.shade(mapped(self._dynamic_range, (c.lightness, i)))
-            for i, c in enumerate(self._input_colors)
+            for i, c in enumerate(self._input_colors.values())
         ]
         shade_mapping = LinearMapping(dark.lightness, bright.lightness)
 
@@ -110,17 +141,18 @@ class LinesGeneratorTwoColors(LinesGenerator):
             return dark.blend(bright, shade_mapping.position_of(lightness))
 
         for s in self._shades:
-            yield blend(s), ""
+            yield blend(s), Indicator()
 
         if self._include_input:
             sides = "darkest", "brightest"
             for side, old, new in zip(
-                sides, self._input_colors, mapping_colors, strict=True
+                sides, self._input_colors.values(), mapping_colors, strict=True
             ):
-                if old != new:
-                    yield new, f"same hue & saturation as {side} input"
-                prop = "color" if old == new else "shade"
-                yield blend(old.lightness), f"same {prop} as {side} input"
+                if old.as_hex == new.as_hex:
+                    yield new, Indicator(side, {"hue", "saturation", "lightness"})
+                else:
+                    yield blend(old.lightness), Indicator(side, {"lightness"})
+                    yield new, Indicator(side, {"hue", "saturation"})
 
 
 class CssArgsParser(ArgsParser):
