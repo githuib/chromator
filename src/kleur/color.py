@@ -1,4 +1,5 @@
 from dataclasses import astuple, dataclass, replace
+from enum import IntFlag, auto
 from functools import cached_property, total_ordering
 from typing import TYPE_CHECKING
 
@@ -99,16 +100,18 @@ class _HSLuv:
         return round(r * 255), round(g * 255), round(b * 255)
 
 
-@dataclass(frozen=True)
-class ColorStr:
-    hue: str
-    saturation: str
-    lightness: str
-
-
 @total_ordering
 @dataclass(frozen=True)
 class Color(HasNormalizeArgs):
+    class Props(IntFlag):
+        H = auto()
+        S = auto()
+        L = auto()
+        NONE = 0
+        NO_L = H | S
+        NO_S = H | L
+        ALL = H | S | L
+
     hue: float = 0  # 0 - 1 (full circle angle)
     saturation: float = 1  # 0 - 1 (ratio)
     lightness: float = 0.5  # 0 - 1 (ratio)
@@ -117,6 +120,33 @@ class Color(HasNormalizeArgs):
         self._normalize_values(
             {"hue": trim_cyclic, "saturation": trim, "lightness": trim}
         )
+
+    def __repr__(self) -> str:
+        sh, ss, sl = self.prop_strings()
+        return f"HSLuv({sh}, {ss}, {sl})"
+
+    def __lt__(self, other: Color) -> bool:
+        return self.as_sortable_tuple < other.as_sortable_tuple
+
+    def __iter__(self) -> Iterator[float]:
+        yield self.hue
+        yield self.saturation
+        yield self.lightness
+
+    def with_props(self, props: Props) -> Color:
+        """
+        Color built up with from a selection of its original hue, saturation, lightness.
+
+        This could be helpful for understanding how colors
+        are built up and relate to each other.
+        """
+        prop_values = zip(iter(self), iter(self.Props), strict=True)
+        return Color(*[v for v, p in prop_values if p in props])
+
+    def prop_strings(self) -> Iterator[str]:
+        hue, sat, li = iter(self)
+        for p_str in (f"{hue * 360:.2f}°", f"{sat:.2%}", f"{li:.2%}"):
+            yield p_str.rjust(7)
 
     def adjust(
         self, *, hue: float = None, saturation: float = None, lightness: float = None
@@ -134,19 +164,6 @@ class Color(HasNormalizeArgs):
     def align_pair(self, other: Color) -> tuple[Color, Color]:
         aligned_self = self.align(other)
         return aligned_self, other.align(aligned_self)
-
-    @cached_property
-    def prop_strings(self) -> ColorStr:
-        hue, sat, li = self.hue, self.saturation, self.lightness
-        prop_strings = f"{hue * 360:.2f}°", f"{sat:.2%}", f"{li:.2%}"
-        return ColorStr(*[p.rjust(7) for p in prop_strings])
-
-    def __repr__(self) -> str:
-        ps = self.prop_strings
-        return f"HSLuv({ps.hue}, {ps.saturation}, {ps.lightness})"
-
-    def __lt__(self, other: Color) -> bool:
-        return self.as_sortable_tuple < other.as_sortable_tuple
 
     @cached_property
     def as_sortable_tuple(self) -> tuple[float, float, float]:

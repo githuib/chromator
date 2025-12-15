@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-from enum import IntFlag, auto
 from functools import cache
 from typing import TYPE_CHECKING, Self
 
@@ -133,13 +132,6 @@ class Colored[T](str):
         return Colored(self.value, self.fg, background)
 
 
-class ColorProps(IntFlag):
-    H = auto()
-    S = auto()
-    L = auto()
-    ALL = H | S | L
-
-
 class Highlighter:
     def __init__(self, color: Color) -> None:
         self._color = color
@@ -158,27 +150,20 @@ class ColorHighlighter:
 
     def __call__(
         self,
-        highlighted: ColorProps = ColorProps.ALL,
+        highlighted: Color.Props = Color.Props.ALL,
         *,
         enable_bounds_highlights: bool = False,
     ) -> str:
-        props, p_str = iter(ColorProps), self._color.prop_strings
-        # Reformat prop strings to our needs.
-        prop_strings = [
-            f" {p:>7} " for p in (p_str.hue, p_str.saturation, p_str.lightness)
-        ]
-        # Colors progressively built up with hue, saturation & lightness which can be
-        # helpful for understanding how colors are built up and relate to each other.
-        ch = Color(self._color.hue)
-        cs = ch.saturated(self._color.saturation)
-        cl = cs.shade(self._color.lightness)
+        c, cp = self._color, Color.Props
+        # Colors progressively built up with hue, saturation & lightness
+        decomposed = [c.with_props(cp.H), c.with_props(cp.NO_L), c]
         # Go over each color property and highlight it if necessary.
         sh, ss, sl = [
-            Highlighter(c)(s, enabled=p in highlighted)
-            for (s, c, p) in zip(prop_strings, (ch, cs, cl), props, strict=True)
+            Highlighter(k)(f" {s} ", enabled=p in highlighted)
+            for (s, k, p) in zip(c.prop_strings(), decomposed, iter(cp), strict=True)
         ]
         # Highlight the outer brackets (or don't), to make it more clearly
         # noticeable if a color is highlighted.
-        has_hl = bool(highlighted) and enable_bounds_highlights
-        hsluv, start, end = [self._hl(s, enabled=has_hl) for s in ("HSLuv", "[", "]")]
+        is_hl = bool(highlighted) and enable_bounds_highlights
+        hsluv, start, end = [self._hl(s, enabled=is_hl) for s in ("HSLuv", "[", "]")]
         return f"{hsluv} {start} {sh} {ss} {sl} {end}"
