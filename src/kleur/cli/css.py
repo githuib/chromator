@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def _input_comment(color: Color) -> str:
-    return f"{Highlighter(color)(f' #{color.as_hex}; ')}   {ColorHighlighter(color)()}"
+    return f"{Highlighter(color)(f' #{color.as_hex}; ')} {ColorHighlighter(color)()}"
 
 
 class LinesGenerator(ABC):

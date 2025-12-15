@@ -36,30 +36,31 @@ options:
 #### Preview default theme
 
 ```commandline
-$ uv run kleur theme -s 7
+$ uv run kleur theme
 ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/default.png "kleur theme -s 7")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/default.png "kleur theme")
 
 #### Preview custom theme
 
 ```commandline
-$ kleur theme -s 7 -c green=133 blue=257 tomato=20
+$ kleur theme -c green=133 blue=257 tomato=20
  ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/custom.png "kleur theme -s 7 -c green=133 blue=257 tomato=20")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/custom.png "kleur theme -c green=133 blue=257 tomato=20")
 
 #### Preview custom theme merged with default theme
 
 ```commandline
-$ kleur theme -s 7 -c green=133 blue=257 tomato=20 -m
+$ kleur theme -c green=133 blue=257 tomato=20 -m
  ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/merged.png "kleur theme -s 7 -c green=133 blue=257 tomato=20 -m")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/merged.png "kleur theme -c green=133 blue=257 tomato=20 -m")
 
 ### Generate shades (as CSS variables), based one 1 or 2 (hex) colors
 
 #### General help
 
 ```commandline
-usage: kleur css [-h] [-l LABEL] -c COLOR1 [-k COLOR2] [-s NUMBER_OF_SHADES] [-b] [-i] [-d DYNAMIC_RANGE]
+usage: kleur css [-h] [-l LABEL] -c COLOR1 [-k COLOR2]
+[-s NUMBER_OF_SHADES] [-b] [-i] [-d DYNAMIC_RANGE]
 
 options:
   -h, --help            show this help message and exit
@@ -75,16 +76,16 @@ options:
 #### Based on one input color
 
 ```commandline
-$ kleur css doodle -c d00d1e -s 9
+$ kleur css -l tables -c 7ab1e5
 ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/single.png "kleur css doodle -c d00d1e -s 9 -i")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/single.png "kleur css -l tables -c 7ab1e5 -i")
 
 With input markers:
 
 ```commandline
-$ kleur css doodle -c d00d1e -s 9 -i
+$ kleur css -l tables -c 7ab1e5 -i
 ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/single_input.png "kleur css doodle -c d00d1e -s 9 -i")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/single_input.png "kleur css -l tables -c 7ab1e5 -i")
 
 #### Based on two input colors
 
@@ -103,23 +104,23 @@ The dynamic range specifies to what degree the hue of the input colors will be u
   *The shades will interpolate between the darkest & brightest shades of the input colors.*
 
 ```commandline
-$ kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 66
+$ kleur css -l bad-guy -c badddd -k aa601f -d 66
 ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double.png "kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 66")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double.png "kleur css -l bad-guy -c badddd -k aa601f -d 66")
 
 With input markers, varying in dynamic range:
 
 ```commandline
-$ kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 0 -i
+$ kleur css -l bad-guy -c badddd -k aa601f -d 0 -i
 ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double_0.png "kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 0 -i")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double_0.png "kleur css -l bad-guy -c badddd -k aa601f -d 0 -i")
 
 ```commandline
-$ kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 50 -i
+$ kleur css -l bad-guy -c badddd -k aa601f -d 50 -i
 ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double_50.png "kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 50 -i")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double_50.png "kleur css -l bad-guy -c badddd -k aa601f -d 50 -i")
 
 ```commandline
-$ kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 100 -i
+$ kleur css -l bad-guy -c badddd -k aa601f -d 100 -i
 ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double_100.png "kleur css -l beatle-salads -c bea71e -k 5a1ad5 -s 9 -d 100 -i")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css/double_100.png "kleur css -l bad-guy -c badddd -k aa601f -d 100 -i")

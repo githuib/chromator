@@ -125,6 +125,14 @@ class Color(HasNormalizeArgs):
         sh, ss, sl = self.prop_strings()
         return f"HSLuv({sh}, {ss}, {sl})"
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Color):
+            return self.as_rgb == other.as_rgb
+        raise NotImplementedError
+
+    def __hash__(self) -> int:
+        return hash(iter(self))
+
     def __lt__(self, other: Color) -> bool:
         return self.as_sortable_tuple < other.as_sortable_tuple
 
