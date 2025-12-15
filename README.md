@@ -7,6 +7,9 @@
 I'd like to give special credits to [Alexei Boronine](https://github.com/boronine) and everyone else who contributed to the [HSLuv](https://www.hsluv.org/) project.
 This work provided the fundaments to build this package on (and is the only dependency used in it).
 
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme.png "kleur theme")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/css.png "kleur css")
+
 ## Installation
 
 ```commandline
