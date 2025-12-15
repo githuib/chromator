@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from kleur import AltColors, Color, Colored, Colors
+from kleur import GREY, AltColors, Color, Colored, Colors, Highlighter, c
 
 from .utils import (
     ArgsParser,
@@ -15,42 +15,48 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Iterable, Iterator
 
-BLOCK_WIDTH = 8
+
+def _block(s: str) -> str:
+    return s.center(8)
+
+
+def _highlight_hex(color: Color, *, inverted: bool = False) -> str:
+    return Highlighter(color)(_block(color.as_hex), inverted=inverted)
 
 
 class LinesGenerator:
     def __init__(self, args: Namespace) -> None:
-        n_shades, n_vibrances = args.number_of_shades, args.number_of_vibrances
-        self._shades = [s / (n_shades + 1) for s in range(1, n_shades + 1)]
-        self._vibrances = [v / n_vibrances for v in range(1, n_vibrances + 1)]
-        hues: dict[int, str] = {}
+        ns, nv = args.number_of_shades, args.number_of_vibrances
+        self._shades = [s / (ns + 1) for s in range(1, ns + 1)]
+        self._vibrances = [v / nv for v in range(1, nv + 1)]
+
+        colors: dict[int, tuple[str, Color]] = {}
+
         if args.merge_with_default_theme or not args.colors:
+            # Add colors from default theme.
             theme_cls = AltColors if args.alt_default_theme else Colors
             for name, color in get_class_vars(theme_cls, Color).items():
-                hues[round(color.hue * 360)] = name
+                colors[round(color.hue * 360)] = name, color
+
+        # Add custom colors from args.
         for name, hue in args.colors:
-            hues[try_convert(int, hue, default=333)] = name
-        self._hues = sorted(hues.items())
+            h = try_convert(int, hue, default=333) % 360
+            colors[h] = name, c(h)
 
-    def _blocks(
-        self, name: str, vibrance: float, hue: float = None
-    ) -> Iterable[Colored]:
-        color = Color(hue or 0, vibrance)
+        self._colors = sorted(colors.items())
+
+    def _blocks(self, last_block: str, color: Color) -> Iterable[str]:
         for s in self._shades:
-            c = color.shade(s)
-            yield Colored(c.as_hex.center(BLOCK_WIDTH), c.contrasting_shade, c)
-        hue_str = "   " if hue is None else f"{hue * 360:03.0f}"
-        yield Colored(f" {hue_str} {name}", color)
-
-    def _line(self, name: str, vibrance: float, hue: float = None) -> str:
-        return "".join(str(c) for c in self._blocks(name, vibrance, hue))
+            yield _highlight_hex(color.shade(s))
+        yield Colored(last_block, color)
 
     def lines(self) -> Iterator[str]:
-        yield self._line("grey", 0)
-        for vibrance in self._vibrances:
-            yield "".join(f"{s:.2%}".center(BLOCK_WIDTH) for s in self._shades)
-            for hue, name in self._hues:
-                yield self._line(name, vibrance, hue / 360)
+        yield "".join(self._blocks("     grey", GREY))
+        for v in self._vibrances:
+            yield "".join(_block(f"{s:.2%}") for s in self._shades)
+            for h, (name, color) in self._colors:
+                k = color.adjust(saturation=v)
+                yield "".join(self._blocks(f" {h:3.0f} {name}", k))
 
 
 class ThemeArgsParser(ArgsParser):

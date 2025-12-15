@@ -1,13 +1,13 @@
 from dataclasses import astuple, dataclass, replace
 from functools import cached_property, total_ordering
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from hsluv import hex_to_hsluv, hsluv_to_hex, hsluv_to_rgb, rgb_to_hsluv
 
 from .interpol import mapped, mapped_cyclic, trim, trim_cyclic
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
 
 _INCREASE_FACTOR = 2**0.5
 
@@ -99,7 +99,11 @@ class _HSLuv:
         return round(r * 255), round(g * 255), round(b * 255)
 
 
-type ColorProp = Literal["hue", "saturation", "lightness"]
+@dataclass(frozen=True)
+class ColorStr:
+    hue: str
+    saturation: str
+    lightness: str
 
 
 @total_ordering
@@ -123,16 +127,23 @@ class Color(HasNormalizeArgs):
             self.lightness * (lightness or 1),
         )
 
+    def align(self, other: Color) -> Color:
+        is_unsaturated = round(self.saturation, 2) == 0
+        return self.shifted(other.hue) if is_unsaturated else self
+
+    def align_pair(self, other: Color) -> tuple[Color, Color]:
+        aligned_self = self.align(other)
+        return aligned_self, other.align(aligned_self)
+
     @cached_property
-    def prop_strings(self) -> dict[ColorProp, str]:
-        return {
-            "hue": f"{self.hue * 360:.2f}°",
-            "saturation": f"{self.saturation:.2%}",
-            "lightness": f"{self.lightness:.2%}",
-        }
+    def prop_strings(self) -> ColorStr:
+        hue, sat, li = self.hue, self.saturation, self.lightness
+        prop_strings = f"{hue * 360:.2f}°", f"{sat:.2%}", f"{li:.2%}"
+        return ColorStr(*[p.rjust(7) for p in prop_strings])
 
     def __repr__(self) -> str:
-        return f"HSLuv({', '.join(self.prop_strings.values())})"
+        ps = self.prop_strings
+        return f"HSLuv({ps.hue}, {ps.saturation}, {ps.lightness})"
 
     def __lt__(self, other: Color) -> bool:
         return self.as_sortable_tuple < other.as_sortable_tuple
@@ -158,16 +169,12 @@ class Color(HasNormalizeArgs):
         :param rgb_hex: RGB hex string (may start with '#')
         :return: Color instance
 
-        >>> c1 = Color.from_hex("808303")
-        >>> c1.as_hex
-        '808303'
-        >>> c1.as_rgb
-        (128, 131, 3)
-        >>> c2 = Color.from_hex("0af")
-        >>> c2.as_hex
-        '00aaff'
-        >>> c2.as_rgb
-        (0, 170, 255)
+        >>> c = Color.from_hex("808303")
+        >>> c.as_hex, c.as_rgb
+        ('808303', (128, 131, 3))
+        >>> k = Color.from_hex("0af")
+        >>> k.as_hex, k.as_rgb
+        ('00aaff', (0, 170, 255))
         """
         return cls._from_hsluv(_HSLuv.from_hex(normalize_rgb_hex(rgb_hex)))
 
@@ -183,16 +190,12 @@ class Color(HasNormalizeArgs):
         :param rgb: RGB instance
         :return: Color instance
 
-        >>> c1 = Color.from_rgb((128, 131, 3))
-        >>> c1.as_hex
-        '808303'
-        >>> c1.as_rgb
-        (128, 131, 3)
-        >>> c2 = Color.from_rgb((0, 170, 255))
-        >>> c2.as_hex
-        '00aaff'
-        >>> c2.as_rgb
-        (0, 170, 255)
+        >>> c = Color.from_rgb((128, 131, 3))
+        >>> c.as_hex, c.as_rgb
+        ('808303', (128, 131, 3))
+        >>> k = Color.from_rgb((0, 170, 255))
+        >>> k.as_hex, k.as_rgb
+        ('00aaff', (0, 170, 255))
         """
         return cls._from_hsluv(_HSLuv.from_rgb(rgb))
 
@@ -208,6 +211,10 @@ class Color(HasNormalizeArgs):
 
     def shade(self, lightness: float) -> Color:
         return replace(self, lightness=lightness)
+
+    def shades(self, n_intervals: int) -> Iterator[Color]:
+        for step in range(1, n_intervals):
+            yield self.shade(step / n_intervals)
 
     @cached_property
     def very_bright(self) -> Color:
@@ -265,20 +272,28 @@ class Color(HasNormalizeArgs):
 
         :return: Color representation of the contrasting shade
 
-        >>> Color.from_hex("08f").contrasting_shade.as_hex
-        '001531'
-        >>> Color.from_hex("0f8").contrasting_shade.as_hex
-        '006935'
-        >>> Color.from_hex("80f").contrasting_shade.as_hex
-        'ebe4ff'
-        >>> Color.from_hex("8f0").contrasting_shade.as_hex
-        '366b00'
-        >>> Color.from_hex("f08").contrasting_shade.as_hex
-        '2b0012'
-        >>> Color.from_hex("f80").contrasting_shade.as_hex
-        '4a2300'
+        >>> hex_strs = ["08f", "0f8", "80f", "8f0", "f08", "f80"]
+        >>> for c, k in [Color.from_hex(h).contrasting_shade_pair for h in hex_strs]:
+        ...     print(f"{c.as_hex} <-> {k.as_hex}")
+        0088ff <-> 001531
+        00ff88 <-> 006935
+        8800ff <-> ebe4ff
+        88ff00 <-> 366b00
+        ff0088 <-> 2b0012
+        ff8800 <-> 4a2300
         """
         return self.shade((self.lightness + 0.5) % 1)
+
+    @cached_property
+    def contrasting_shade_pair(self) -> tuple[Color, Color]:
+        """
+        Return this color together with its contrasting shade.
+
+        Turns out to be useful quite commonly in practice, especially in situations
+        when you'd want to accommodate a color with a background that would deliver the
+        best contrast in terms of visibility.
+        """
+        return self, self.contrasting_shade
 
     @cached_property
     def contrasting_hue(self) -> Color:
@@ -290,17 +305,26 @@ class Color(HasNormalizeArgs):
 
         :return: Color representation of the contrasting hue
 
-        >>> Color.from_hex("08f").contrasting_hue.as_hex
-        '9c8900'
-        >>> Color.from_hex("0f8").contrasting_hue.as_hex
-        'ffd1f5'
-        >>> Color.from_hex("80f").contrasting_hue.as_hex
-        '5c6900'
-        >>> Color.from_hex("8f0").contrasting_hue.as_hex
-        'f6d9ff'
-        >>> Color.from_hex("f08").contrasting_hue.as_hex
-        '009583'
-        >>> Color.from_hex("f80").contrasting_hue.as_hex
-        '00b8d1'
+        >>> hex_strs = ["08f", "0f8", "80f", "8f0", "f08", "f80"]
+        >>> for c, k in [Color.from_hex(h).contrasting_hue_pair for h in hex_strs]:
+        ...     print(f"{c.as_hex} <-> {k.as_hex}")
+        0088ff <-> 9c8900
+        00ff88 <-> ffd1f5
+        8800ff <-> 5c6900
+        88ff00 <-> f6d9ff
+        ff0088 <-> 009583
+        ff8800 <-> 00b8d1
         """
         return self.adjust(hue=0.5)
+
+    @cached_property
+    def contrasting_hue_pair(self) -> tuple[Color, Color]:
+        """Return this color together with its contrasting hue."""
+        return self, self.contrasting_hue
+
+
+def blend_colors(c: Color, k: Color) -> Callable[[float], Color]:
+    def wrapped(amount: float) -> Color:
+        return c.blend(k, amount)
+
+    return wrapped

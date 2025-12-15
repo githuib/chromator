@@ -1,109 +1,60 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from math import log10
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
-from kleur import Color, Colored
+from kleur import Color, ColorHighlighter, ColorProps, Highlighter, blend_colors
 from kleur.interpol import LinearMapping, mapped
 
 from .utils import ArgsParser, check_integer_in_range, print_lines
 
 if TYPE_CHECKING:
     from argparse import Namespace
-    from collections.abc import Callable, Iterator
-
-    from kleur.color import ColorProp
+    from collections.abc import Iterator
 
 
-@dataclass(frozen=True)
-class Indicator:
-    side: str = ""
-    props: set[ColorProp] = field(default_factory=set)
-
-
-def _colored(color: Color) -> Callable[[str], str]:
-    def wrapped(s: str) -> str:
-        return Colored(s, color.contrasting_shade, color)
-
-    return wrapped
-
-
-def _colored_props(color: Color, indicator: set[ColorProp]) -> Iterator[str]:
-    h_str, s_str, l_str = color.prop_strings.values()
-    i_hue, i_sat, i_li = [p in indicator for p in color.prop_strings]
-
-    c_hue = Color(color.hue, lightness=0.5)
-    yield _colored(c_hue)(h_str) if i_hue else h_str
-
-    c_sat = c_hue.saturated(color.saturation)
-    yield _colored(c_sat)(s_str) if i_sat else s_str
-
-    c_li = c_sat.shade(color.lightness)
-    yield _colored(c_li)(l_str) if i_li else l_str
+def _input_comment(color: Color) -> str:
+    return f"{Highlighter(color)(f' #{color.as_hex}; ')}   {ColorHighlighter(color)()}"
 
 
 class LinesGenerator(ABC):
-    _input_colors: dict[str, Color]
-
     def __init__(self, args: Namespace) -> None:
-        self._include_input = args.include_input_shades
-        self._include_bw = args.include_black_and_white
-        self._label = args.label
-        steps = args.number_of_shades + 1
-        shades_range = (0, steps + 1) if self._include_bw else (1, steps)
-        self._shades = [s / steps for s in range(*shades_range)]
-        self._generated_shades: set[int] = set()
-
-    def _comment_lines(self) -> Iterator[str]:
-        yield "Based on:"
-        for side, color in self._input_colors.items():
-            side_str = f"{side.capitalize()}:"
-            yield f"- {side_str:<10} {_colored(color)(f'#{color.as_hex}')} --> {color}"
+        self._label, self._include_input = (args.label, args.include_input_shades)
+        ibw, ns = (args.include_black_and_white, args.number_of_shades + 1)
+        self._shades = [s / ns for s in range(*((0, ns + 1) if ibw else (1, ns)))]
 
     @abstractmethod
-    def _colors(self) -> Iterator[tuple[Color, Indicator]]: ...
+    def _comment_lines(self) -> Iterator[str]: ...
+
+    @abstractmethod
+    def _colors(self) -> Iterator[tuple[Color, ColorProps]]: ...
 
     def lines(self) -> Iterator[str]:
         yield "/*"
         yield from self._comment_lines()
         yield "*/"
 
-        colors = {round(c.lightness * 100): (c, i) for c, i in self._colors()}
-        n_digits = int(log10(max(colors.keys()))) + 1
-        for s, (c, i) in sorted(colors.items()):
-            cf = _colored(c)
-
-            css_var = cf(f"--{self._label}-{str(s).zfill(n_digits)}: #{c.as_hex};")
-
-            comment = f" --> HSLuv({', '.join(_colored_props(c, i.props))})"
-            if i.side:
-                p_str = {1: next(iter(i.props)), 2: " & ".join(i.props), 3: "color"}
-                side = _colored(self._input_colors[i.side])(f"{i.side} input")
-                comment += f" <-- same {p_str[len(i.props)]} as {side}"
-
-            yield f"{css_var} /* {comment} */"
+        # This intermediate dict will take care of duplicates as a nice side effect. 🫠
+        colors = {f"{c.lightness * 100:03.0f}": (c, hp) for c, hp in self._colors()}
+        for shade, (color, hl_ps) in sorted(colors.items()):
+            hl, hl_c, is_hl = Highlighter(color), ColorHighlighter(color), bool(hl_ps)
+            hex_str = f"{hl(' ')}{hl(f'#{color.as_hex};', inverted=is_hl)}{hl(' ')}"
+            css_var = f"{hl(f'--{self._label}-{shade}', enabled=is_hl)}:{hex_str}"
+            yield f"{css_var}/* {hl_c(hl_ps, enable_bounds_highlights=is_hl)} */"
 
 
 class LinesGeneratorOneColor(LinesGenerator):
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
-        self._input_color = Color.from_hex(args.color1)
-        self._input_colors = {"input": self._input_color}
+        self._input = Color.from_hex(args.color1)
 
-    def _colors(self) -> Iterator[tuple[Color, Indicator]]:
+    def _comment_lines(self) -> Iterator[str]:
+        yield f"Based on: {_input_comment(self._input)}"
+
+    def _colors(self) -> Iterator[tuple[Color, ColorProps]]:
         """Generate shades of a color."""
         for s in self._shades:
-            yield self._input_color.shade(s), Indicator()
-
+            yield self._input.shade(s), ColorProps(0)
         if self._include_input:
-            yield (
-                self._input_color,
-                Indicator("input", {"hue", "saturation", "lightness"}),
-            )
-
-
-def normalize_color(c1: Color, c2: Color) -> Color:
-    return c1 if round(c1.saturation, 2) else c1.shifted(c2.hue)
+            yield self._input, ColorProps.ALL
 
 
 class LinesGeneratorTwoColors(LinesGenerator):
@@ -111,12 +62,14 @@ class LinesGeneratorTwoColors(LinesGenerator):
         super().__init__(args)
         self._dynamic_range = args.dynamic_range / 100
         c1, c2 = Color.from_hex(args.color1), Color.from_hex(args.color2)
-        c1 = normalize_color(c1, c2)
-        c2 = normalize_color(c2, c1)
-        self._dark, self._bright = sorted((c1, c2))
-        self._input_colors = {"darkest": self._dark, "brightest": self._bright}
+        self._dark, self._bright = sorted(c1.align_pair(c2))
 
-    def _colors(self) -> Iterator[tuple[Color, Indicator]]:
+    def _comment_lines(self) -> Iterator[str]:
+        yield "Based on:"
+        yield f" Darkest:   {_input_comment(self._dark)}"
+        yield f" Brightest: {_input_comment(self._bright)}"
+
+    def _colors(self) -> Iterator[tuple[Color, ColorProps]]:
         """
         Generate shades based on two colors.
 
@@ -131,28 +84,28 @@ class LinesGeneratorTwoColors(LinesGenerator):
             The shades will interpolate (or extrapolate) between
             the darkest & brightest shades of the input colors
         """
-        dark, bright = mapping_colors = [
-            c.shade(mapped(self._dynamic_range, (c.lightness, i)))
-            for i, c in enumerate(self._input_colors.values())
-        ]
-        shade_mapping = LinearMapping(dark.lightness, bright.lightness)
+
+        def dynamic_bound(c: Color, edge: Literal[0, 1]) -> Color:
+            return c.shade(mapped(self._dynamic_range, (c.lightness, edge)))
+
+        dark_o, bright_o = self._dark, self._bright
+        dark_n, bright_n = (dynamic_bound(dark_o, 0), dynamic_bound(bright_o, 1))
+        shade_mapping = LinearMapping(dark_n.lightness, bright_n.lightness)
+        blend_ = blend_colors(dark_n, bright_n)
 
         def blend(lightness: float) -> Color:
-            return dark.blend(bright, shade_mapping.position_of(lightness))
+            return blend_(shade_mapping.position_of(lightness))
 
         for s in self._shades:
-            yield blend(s), Indicator()
+            yield blend(s), ColorProps(0)
 
         if self._include_input:
-            sides = "darkest", "brightest"
-            for side, old, new in zip(
-                sides, self._input_colors.values(), mapping_colors, strict=True
-            ):
+            for old, new in zip((dark_o, bright_o), (dark_n, bright_n), strict=True):
                 if old.as_hex == new.as_hex:
-                    yield new, Indicator(side, {"hue", "saturation", "lightness"})
+                    yield new, ColorProps.ALL
                 else:
-                    yield blend(old.lightness), Indicator(side, {"lightness"})
-                    yield new, Indicator(side, {"hue", "saturation"})
+                    yield blend(old.lightness), ColorProps.L
+                    yield new, ColorProps.H | ColorProps.S
 
 
 class CssArgsParser(ArgsParser):

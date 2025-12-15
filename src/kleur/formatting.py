@@ -1,13 +1,16 @@
 import os
 import re
 import sys
+from enum import IntFlag, auto
 from functools import cache
 from typing import TYPE_CHECKING, Self
+
+from kleur import Color
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from .color import RGB, Color
+    from kleur import RGB
 
 ANSI_ESCAPE = "\x1b"
 _ANSI_STYLE_REGEX = re.compile(rf"{ANSI_ESCAPE}\[\d+(;\d+)*m")
@@ -128,3 +131,54 @@ class Colored[T](str):
 
     def with_background(self, background: Color) -> Colored:
         return Colored(self.value, self.fg, background)
+
+
+class ColorProps(IntFlag):
+    H = auto()
+    S = auto()
+    L = auto()
+    ALL = H | S | L
+
+
+class Highlighter:
+    def __init__(self, color: Color) -> None:
+        self._color = color
+
+    def __call__(self, s: str, *, inverted: bool = False, enabled: bool = True) -> str:
+        if not enabled:
+            return s
+        c, k = self._color.contrasting_shade_pair
+        return Colored(s, *((c, k) if inverted else (k, c)))
+
+
+class ColorHighlighter:
+    def __init__(self, color: Color) -> None:
+        self._color = color
+        self._hl = Highlighter(color)
+
+    def __call__(
+        self,
+        highlighted: ColorProps = ColorProps.ALL,
+        *,
+        enable_bounds_highlights: bool = False,
+    ) -> str:
+        props, p_str = iter(ColorProps), self._color.prop_strings
+        # Reformat prop strings to our needs.
+        prop_strings = [
+            f" {p:>7} " for p in (p_str.hue, p_str.saturation, p_str.lightness)
+        ]
+        # Colors progressively built up with hue, saturation & lightness which can be
+        # helpful for understanding how colors are built up and relate to each other.
+        ch = Color(self._color.hue)
+        cs = ch.saturated(self._color.saturation)
+        cl = cs.shade(self._color.lightness)
+        # Go over each color property and highlight it if necessary.
+        sh, ss, sl = [
+            Highlighter(c)(s, enabled=p in highlighted)
+            for (s, c, p) in zip(prop_strings, (ch, cs, cl), props, strict=True)
+        ]
+        # Highlight the outer brackets (or don't), to make it more clearly
+        # noticeable if a color is highlighted.
+        has_hl = bool(highlighted) and enable_bounds_highlights
+        hsluv, start, end = [self._hl(s, enabled=has_hl) for s in ("HSLuv", "[", "]")]
+        return f"{hsluv} {start} {sh} {ss} {sl} {end}"
