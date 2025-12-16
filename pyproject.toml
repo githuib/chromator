@@ -1,6 +1,6 @@
 [project]
 name = "kleur"
-version = "1.3.3"
+version = "1.3.4"
 description = "Color shades generator"
 authors = [{ name = "Huib Piguillet", email = "huib@proton.me" }]
 requires-python = ">=3.14"
