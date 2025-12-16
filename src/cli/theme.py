@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from kleur import BLACK, GREY, WHITE, AltColors, Color, Colored, Colors, Highlighter, c
-from kleur.interpol import LinearMapping
 
 from .utils import (
     ArgsParser,
@@ -25,10 +24,6 @@ def _column(s: str) -> str:
     return s.center(COLUMN_WIDTH)
 
 
-def _highlight_hex(color: Color, *, inverted: bool = False) -> str:
-    return Highlighter(color)(_column(color.as_hex), inverted=inverted)
-
-
 class LinesGenerator:
     def __init__(self, args: Namespace) -> None:
         ns, nv = args.number_of_shades, args.number_of_vibrances
@@ -49,22 +44,19 @@ class LinesGenerator:
 
         self._colors = dict(sorted(colors.items(), key=lambda i: i[1].hue))
 
-    def _percentage_columns(self, saturation: float) -> Iterator[str]:
-        first_color = next(iter(self._colors.values()))
-        k = first_color.contrasting_hue.saturated(saturation)
-        shade_mapping = LinearMapping(0.5, 0.75)
+    def _percentage_columns(self, v: float) -> Iterator[str]:
+        k = next(iter(self._colors.values())).contrasting_hue.saturated(v).bright
         yield FIRST_COLUMN
         for s in self._shades:
-            yield Colored(
-                _column(f"{round(s * 100, 2):n}%"), k.shade(shade_mapping.value_at(s))
-            )
+            yield Colored(_column(f"{round(s * 100, 2):n}%"), k)
 
     def _color_columns(
         self, number: str, last_column: str, color: Color
     ) -> Iterable[str]:
         yield Colored(FIRST_COLUMN, bg=BLACK)
         for s in self._shades:
-            yield _highlight_hex(color.shade(s))
+            k = color.shade(s)
+            yield Highlighter(k)(_column(k.as_hex))
         name_length = max(len(n) for n in self._colors)
         yield Colored(f" {number} {last_column.ljust(name_length)} ", color, WHITE)
 
