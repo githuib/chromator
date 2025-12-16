@@ -17,13 +17,12 @@ class Colors:
     Custom color themes can by specified by creating a very basic class
     that solely consists of a different set of hues (in degrees), for example:
     >>> from math import pi
-    >>> from kleur.cli.utils import get_class_vars
     >>> class MyColors:
     ...     tomato = c(15)
     ...     turquoise = c(175)
     ...     very_random = tomato.blend(turquoise, 1 / pi)
-    >>> for name, color in get_class_vars(MyColors, Color).items():
-    ...     print(f"{color} <-- {name}")
+    >>> for name in ["tomato", "turquoise", "very_random"]:
+    ...     print(f"{getattr(MyColors, name)} <-- {name}")
     HSLuv( 15.00°, 100.00%,  50.00%) <-- tomato
     HSLuv(175.00°, 100.00%,  50.00%) <-- turquoise
     HSLuv( 65.93°, 100.00%,  50.00%) <-- very_random

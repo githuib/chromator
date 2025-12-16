@@ -34,7 +34,7 @@ PyPI = "https://pypi.org/project/kleur/"
 Github = "https://github.com/githuib/kleur"
 
 [project.scripts]
-kleur = "kleur.cli:main"
+kleur = "cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.3,<0.10.0"]
