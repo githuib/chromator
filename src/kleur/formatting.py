@@ -153,16 +153,17 @@ class ColorHighlighter:
     def __call__(
         self, highlighted: CP = CP.ALL, *, enable_bounds_highlights: bool = False
     ) -> str:
-        c, highlighter = self._color, Highlighter(self._color)
+        c = self._color
         # Colors progressively built up with hue, saturation & lightness
         decomposed = [c.with_props(CP.H), c.with_props(CP.NO_L), c]
         # Go over each color property and highlight it if necessary.
-        sh, ss, sl = [
+        values = " ".join(
             Highlighter(k)(f" {s} ", enabled=p in highlighted)
             for (s, k, p) in zip(c.prop_strings(), decomposed, iter(CP), strict=True)
-        ]
-        # Highlight the outer brackets (or don't), to make it more clearly
-        # noticeable if a color is highlighted.
-        is_hl = bool(highlighted) and enable_bounds_highlights
-        hsluv, start, end = [highlighter(s, enabled=is_hl) for s in ("HSLuv", "[", "]")]
-        return f"{hsluv} {start} {sh} {ss} {sl} {end}"
+        )
+        n, start, end = b = "HSLuv", "[", "]"
+        if enable_bounds_highlights:
+            # When some of the values were highlighted, highlight the outer brackets
+            # as well to make it visually stand out more.
+            n, start, end = [Highlighter(c)(s, enabled=bool(highlighted)) for s in b]
+        return f"{n} {start} {values} {end}"
