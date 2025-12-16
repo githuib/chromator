@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from kleur import BLACK, GREY, WHITE, AltColors, Color, Colored, Colors, Highlighter, c
+from kleur.interpol import LinearMapping
 
 from .utils import (
     ArgsParser,
@@ -44,11 +45,20 @@ class LinesGenerator:
 
         self._colors = dict(sorted(colors.items(), key=lambda i: i[1].hue))
 
+        # Shades percentages are right above the first color, so let's give them a
+        # contrasting hue. Furthermore, making them slightly brighter as the shade
+        # increases will give them a more uniform appearance to the human eye.
+        self._percentage_color = next(iter(self._colors.values())).contrasting_hue
+        # Values based on experimenting with themes differing in starting color.
+        # Overall this seems to work well, or at least to my eyes :)
+        self._percentage_shade_mapping = LinearMapping(0.58, 0.74)
+
     def _percentage_columns(self, v: float) -> Iterator[str]:
-        k = next(iter(self._colors.values())).contrasting_hue.saturated(v).bright
+        k = self._percentage_color.saturated(v)
         yield FIRST_COLUMN
         for s in self._shades:
-            yield Colored(_column(f"{round(s * 100, 2):n}%"), k)
+            ks = k.shade(self._percentage_shade_mapping.value_at(s))
+            yield Colored(_column(f"{round(s * 100, 2):n}%"), ks)
 
     def _color_columns(
         self, number: str, last_column: str, color: Color

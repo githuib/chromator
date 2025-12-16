@@ -1,7 +1,7 @@
-from dataclasses import astuple, dataclass, replace
+from dataclasses import dataclass, replace
 from enum import IntFlag, auto
 from functools import cached_property, total_ordering
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from hsluv import hex_to_hsluv, hsluv_to_hex, hsluv_to_rgb, rgb_to_hsluv
 
@@ -75,8 +75,7 @@ def normalize_rgb_hex(rgb_hex: str) -> str:
 type RGB = tuple[int, int, int]
 
 
-@dataclass(frozen=True)
-class _HSLuv:
+class _HSLuv(NamedTuple):
     hue: float
     saturation: float
     lightness: float
@@ -85,18 +84,18 @@ class _HSLuv:
     def from_hex(cls, rgb_hex: str) -> _HSLuv:
         return cls(*hex_to_hsluv(f"#{rgb_hex}"))
 
-    @cached_property
+    @property
     def as_hex(self) -> str:
-        return hsluv_to_hex(astuple(self))[1:]
+        return hsluv_to_hex(self)[1:]
 
     @classmethod
     def from_rgb(cls, rgb: RGB) -> _HSLuv:
         r, g, b = rgb
         return cls(*rgb_to_hsluv((r / 255, g / 255, b / 255)))
 
-    @cached_property
+    @property
     def as_rgb(self) -> RGB:
-        r, g, b = hsluv_to_rgb(astuple(self))
+        r, g, b = hsluv_to_rgb(self)
         return round(r * 255), round(g * 255), round(b * 255)
 
 
@@ -152,9 +151,8 @@ class Color(HasNormalizeArgs):
         return Color(*[v for v, p in prop_values if p in props])
 
     def prop_strings(self) -> Iterator[str]:
-        hue, sat, li = iter(self)
-        for p_str in (f"{hue * 360:.2f}°", f"{sat:.2%}", f"{li:.2%}"):
-            yield p_str.rjust(7)
+        for v, s in zip(self._as_hsluv, ("°", "%", "%"), strict=True):
+            yield f"{v:.2f}{s}".rjust(7)
 
     def adjust(
         self, *, hue: float = None, saturation: float = None, lightness: float = None
