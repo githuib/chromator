@@ -143,24 +143,24 @@ class Highlighter:
         return Colored(s, *((c, k) if inverted else (k, c)))
 
 
+CP = Color.Props
+
+
 class ColorHighlighter:
     def __init__(self, color: Color) -> None:
         self._color = color
         self._hl = Highlighter(color)
 
     def __call__(
-        self,
-        highlighted: Color.Props = Color.Props.ALL,
-        *,
-        enable_bounds_highlights: bool = False,
+        self, highlighted: CP = CP.ALL, *, enable_bounds_highlights: bool = False
     ) -> str:
-        c, cp = self._color, Color.Props
+        c = self._color
         # Colors progressively built up with hue, saturation & lightness
-        decomposed = [c.with_props(cp.H), c.with_props(cp.NO_L), c]
+        decomposed = [c.with_props(CP.H), c.with_props(CP.NO_L), c]
         # Go over each color property and highlight it if necessary.
         sh, ss, sl = [
             Highlighter(k)(f" {s} ", enabled=p in highlighted)
-            for (s, k, p) in zip(c.prop_strings(), decomposed, iter(cp), strict=True)
+            for (s, k, p) in zip(c.prop_strings(), decomposed, iter(CP), strict=True)
         ]
         # Highlight the outer brackets (or don't), to make it more clearly
         # noticeable if a color is highlighted.

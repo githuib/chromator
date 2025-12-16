@@ -11,6 +11,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
+CP = Color.Props
+
+
 def _input_comment(color: Color) -> str:
     return f"{Highlighter(color)(f' #{color.as_hex}; ')} {ColorHighlighter(color)()}"
 
@@ -25,7 +28,7 @@ class LinesGenerator(ABC):
     def _comment_lines(self) -> Iterator[str]: ...
 
     @abstractmethod
-    def _colors(self) -> Iterator[tuple[Color, Color.Props]]: ...
+    def _colors(self) -> Iterator[tuple[Color, CP]]: ...
 
     def lines(self) -> Iterator[str]:
         yield "/*"
@@ -49,12 +52,12 @@ class LinesGeneratorOneColor(LinesGenerator):
     def _comment_lines(self) -> Iterator[str]:
         yield f"Based on: {_input_comment(self._input)}"
 
-    def _colors(self) -> Iterator[tuple[Color, Color.Props]]:
+    def _colors(self) -> Iterator[tuple[Color, CP]]:
         """Generate shades of a color."""
         for s in self._shades:
-            yield self._input.shade(s), Color.Props.NONE
+            yield self._input.shade(s), CP.NONE
         if self._include_input:
-            yield self._input, Color.Props.ALL
+            yield self._input, CP.ALL
 
 
 class LinesGeneratorTwoColors(LinesGenerator):
@@ -69,7 +72,7 @@ class LinesGeneratorTwoColors(LinesGenerator):
         yield f" Darkest:   {_input_comment(self._dark)}"
         yield f" Brightest: {_input_comment(self._bright)}"
 
-    def _colors(self) -> Iterator[tuple[Color, Color.Props]]:
+    def _colors(self) -> Iterator[tuple[Color, CP]]:
         """
         Generate shades based on two colors.
 
@@ -97,15 +100,15 @@ class LinesGeneratorTwoColors(LinesGenerator):
             return blend_(shade_mapping.position_of(lightness))
 
         for s in self._shades:
-            yield blend(s), Color.Props.NONE
+            yield blend(s), CP.NONE
 
         if self._include_input:
             for old, new in zip((dark_o, bright_o), (dark_n, bright_n), strict=True):
                 if old.as_hex == new.as_hex:
-                    yield new, Color.Props.ALL
+                    yield new, CP.ALL
                 else:
-                    yield blend(old.lightness), Color.Props.L
-                    yield new, Color.Props.NO_L
+                    yield blend(old.lightness), CP.L
+                    yield new, CP.NO_L
 
 
 class CssArgsParser(ArgsParser):
