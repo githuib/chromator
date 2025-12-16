@@ -62,6 +62,7 @@ $ kleur theme -c green=133 blue=257 tomato=20 -m
 #### General help
 
 ```commandline
+$ kleur css -h
 usage: kleur css [-h] [-l LABEL] -c COLOR1 [-k COLOR2]
 [-s NUMBER_OF_SHADES] [-b] [-i] [-d DYNAMIC_RANGE]
 
