@@ -39,7 +39,7 @@ options:
 #### Preview default theme
 
 ```commandline
-$ uv run kleur theme
+$ kleur theme
 ```
 ![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/default.png "kleur theme")
 
