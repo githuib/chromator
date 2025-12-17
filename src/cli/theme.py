@@ -25,6 +25,10 @@ def _column(s: str) -> str:
     return s.center(COLUMN_WIDTH)
 
 
+def _percentage(s: float) -> str:
+    return f"{round(s * 100, 1):n}%"
+
+
 class LinesGenerator:
     def __init__(self, args: Namespace) -> None:
         ns, nv = args.number_of_shades, args.number_of_vibrances
@@ -44,6 +48,7 @@ class LinesGenerator:
             colors[name] = c(h)
 
         self._colors = dict(sorted(colors.items(), key=lambda i: i[1].hue))
+        self._len_last_col = max(len(n) for n in self._colors) + 6
 
         # Shades percentages are right above the first color, so let's give them a
         # contrasting hue. Furthermore, making them slightly brighter as the shade
@@ -51,35 +56,40 @@ class LinesGenerator:
         self._percentage_color = next(iter(self._colors.values())).contrasting_hue
         # Values based on experimenting with themes differing in starting color.
         # Overall this seems to work well, or at least to my eyes :)
-        self._percentage_shade_mapping = LinearMapping(0.58, 0.74)
+        self._percentage_shade_mapping = LinearMapping(0.58, 0.6)
 
     def _percentage_columns(self, v: float) -> Iterator[str]:
-        k = self._percentage_color.saturated(v)
-        yield FIRST_COLUMN
-        for s in self._shades:
-            ks = k.shade(self._percentage_shade_mapping.value_at(s))
-            yield Colored(_column(f"{round(s * 100, 2):n}%"), ks)
+        s_map, k = self._percentage_shade_mapping, self._percentage_color.saturated(v)
+        yield Colored(FIRST_COLUMN, None, BLACK)
 
-    def _color_columns(
-        self, number: str, last_column: str, color: Color
-    ) -> Iterable[str]:
+        for s in self._shades:
+            ks = k.shade(s_map.value_at(s))
+            yield Colored(" ", None, k.shade(s))
+            yield Colored(_percentage(s).center(COLUMN_WIDTH - 1), ks)
+
+        kv = k.shade(s_map.value_at(1))
+        yield Colored(f"{_percentage(v)} ".rjust(self._len_last_col), kv.brighter(), kv)
+
+    def _color_columns(self, name: str, color: Color) -> Iterable[str]:
         yield Colored(FIRST_COLUMN, bg=BLACK)
+
         for s in self._shades:
             k = color.shade(s)
             yield Highlighter(k)(_column(k.as_hex))
-        name_length = max(len(n) for n in self._colors)
-        yield Colored(f" {number} {last_column.ljust(name_length)} ", color, WHITE)
+
+        hue = f"{color.hue * 360:3.0f}" if color.saturation else ""
+        yield Colored(f" {hue:>3} {name}".ljust(self._len_last_col), color, WHITE)
 
     def _rows(self) -> Iterator[Iterable[str]]:
         yield []
         yield self._percentage_columns(0)
-        yield self._color_columns("   ", "grey", GREY)
+        yield self._color_columns("grey", GREY)
         for v in self._vibrances:
             yield []
             yield self._percentage_columns(v)
             for name, k in self._colors.items():
                 ks = k.adjust(saturation=v)
-                yield self._color_columns(f"{k.hue * 360:3.0f}", name, ks)
+                yield self._color_columns(name, ks)
         yield []
 
     def lines(self) -> Iterator[str]:
