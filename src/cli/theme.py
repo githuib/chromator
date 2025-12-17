@@ -60,11 +60,11 @@ class LinesGenerator:
 
     def _percentage_columns(self, v: float) -> Iterator[str]:
         s_map, k = self._percentage_shade_mapping, self._percentage_color.saturated(v)
-        yield Colored(FIRST_COLUMN, None, BLACK)
+        yield Colored(FIRST_COLUMN, bg=BLACK)
 
         for s in self._shades:
             ks = k.shade(s_map.value_at(s))
-            yield Colored(" ", None, k.shade(s))
+            yield Colored(" ", bg=k.shade(s))
             yield Colored(_percentage(s).center(COLUMN_WIDTH - 1), ks)
 
         kv = k.shade(s_map.value_at(1))
