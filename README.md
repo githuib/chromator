@@ -52,16 +52,16 @@ $ kleur theme
 #### Preview custom theme
 
 ```commandline
-$ kleur theme -c green=133 blue=257 tomato=20
+$ kleur theme -c green=143 blue=257 tomato=21 violet=273
  ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/custom.png "kleur theme -c green=133 blue=257 tomato=20")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/custom.png "kleur theme -c green=143 blue=257 tomato=21 violet=273")
 
 #### Preview custom theme merged with default theme
 
 ```commandline
-$ kleur theme -c green=133 blue=257 tomato=20 -m
+$ kleur theme -c green=143 blue=257 tomato=21 violet=273 -m
  ```
-![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/merged.png "kleur theme -c green=133 blue=257 tomato=20 -m")
+![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/theme/merged.png "kleur theme -c green=143 blue=257 tomato=21 violet=273 -m")
 
 ### Generate shades (as CSS variables), based one 1 or 2 (hex) colors
 
