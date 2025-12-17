@@ -17,15 +17,15 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
 
-COLUMN_WIDTH = 8
-FIRST_COLUMN = " "
+COL_WIDTH = 8
+FIRST_COL = " "
 
 
 def _column(s: str) -> str:
-    return s.center(COLUMN_WIDTH)
+    return s.center(COL_WIDTH)
 
 
-def _percentage(s: float) -> str:
+def _perc(s: float) -> str:
     return f"{round(s * 100, 1):n}%"
 
 
@@ -60,18 +60,18 @@ class LinesGenerator:
 
     def _percentage_columns(self, v: float) -> Iterator[str]:
         s_map, k = self._percentage_shade_mapping, self._percentage_color.saturated(v)
-        yield Colored(FIRST_COLUMN, bg=BLACK)
+
+        yield Colored(FIRST_COL, bg=BLACK)
 
         for s in self._shades:
-            ks = k.shade(s_map.value_at(s))
             yield Colored(" ", bg=k.shade(s))
-            yield Colored(_percentage(s).center(COLUMN_WIDTH - 1), ks)
+            yield Colored(_perc(s).center(COL_WIDTH - 1), k.shade(s_map.value_at(s)))
 
         kv = k.shade(s_map.value_at(1))
-        yield Colored(f"{_percentage(v)} ".rjust(self._len_last_col), kv.brighter(), kv)
+        yield Colored(f"{_perc(v)} ".rjust(self._len_last_col), kv.brighter(), kv)
 
     def _color_columns(self, name: str, color: Color) -> Iterable[str]:
-        yield Colored(FIRST_COLUMN, bg=BLACK)
+        yield Colored(FIRST_COL, bg=BLACK)
 
         for s in self._shades:
             k = color.shade(s)
