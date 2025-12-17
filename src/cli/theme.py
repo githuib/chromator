@@ -47,11 +47,12 @@ class LinesGenerator:
         self._percentage_color = next(iter(self._colors.values())).contrasting_hue
         # Values based on experimenting with themes differing in starting color.
         # Overall this seems to work well, or at least to my eyes :)
-        self._shade_map = LinearMapping(0.6, 0.72)
+        self._neutral_shade_lo, self._neutral_shade_hi = 0.6, 0.75
+        self._shade_map = LinearMapping(self._neutral_shade_lo, self._neutral_shade_hi)
 
     def _percentage_columns(self, v: float) -> Iterator[str]:
         cp, sm = self._percentage_color.saturated(v), self._shade_map
-        c0 = cp.shade(sm.value_at(0))
+        c0 = cp.shade(self._neutral_shade_lo)
         yield Colored(f" {_perc(v)}".ljust(self._label_length), c0.brighter(), c0)
 
         for s in self._shades:
@@ -62,7 +63,7 @@ class LinesGenerator:
 
     def _color_columns(self, name: str, color: Color) -> Iterable[str]:
         hue = f"{color.hue * 360:3.0f}" if color.saturation else ""
-        c0 = color.shade(self._shade_map.value_at(0))
+        c0 = color.shade(self._neutral_shade_lo)
         yield Colored(f" {hue:>3} {name}".ljust(self._label_length), c0, BLACK)
 
         for s in self._shades:
@@ -79,8 +80,7 @@ class LinesGenerator:
             yield []
             yield self._percentage_columns(v)
             for name, k in self._colors.items():
-                ks = k.adjust(saturation=v)
-                yield self._color_columns(name, ks)
+                yield self._color_columns(name, k.saturated(v))
         yield []
 
     def lines(self) -> Iterator[str]:

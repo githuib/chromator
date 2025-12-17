@@ -10,7 +10,8 @@ from .interpol import mapped, mapped_cyclic, trim, trim_cyclic
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-_INCREASE_FACTOR = 2**0.5
+_INCREASE_STEP = 0.2
+TINY_BIT = 10e-8
 
 
 class HasNormalizeArgs:
@@ -140,6 +141,20 @@ class Color(HasNormalizeArgs):
         yield self.saturation
         yield self.lightness
 
+    def __add__(self, other: Color) -> Color:
+        return Color(
+            self.hue + other.hue,
+            self.saturation + other.saturation,
+            self.lightness + other.lightness,
+        )
+
+    def __sub__(self, other: Color) -> Color:
+        return Color(
+            self.hue - other.hue,
+            self.saturation - other.saturation,
+            self.lightness - other.lightness,
+        )
+
     def with_props(self, props: Props) -> Color:
         """
         Color built up with from a selection of its original hue, saturation, lightness.
@@ -147,29 +162,12 @@ class Color(HasNormalizeArgs):
         This could be helpful for understanding how colors
         are built up and relate to each other.
         """
-        prop_values = zip(iter(self), iter(self.Props), strict=True)
+        prop_values = zip(self, self.Props, strict=True)
         return Color(*[v for v, p in prop_values if p in props])
 
     def prop_strings(self) -> Iterator[str]:
         for v, s in zip(self._as_hsluv, ("°", "%", "%"), strict=True):
             yield f"{v:.2f}{s}".rjust(7)
-
-    def adjust(
-        self, *, hue: float = None, saturation: float = None, lightness: float = None
-    ) -> Color:
-        return Color(
-            self.hue + (hue or 0),
-            self.saturation * (saturation or 1),
-            self.lightness * (lightness or 1),
-        )
-
-    def align(self, other: Color) -> Color:
-        is_unsaturated = round(self.saturation, 2) == 0
-        return self.shifted(other.hue) if is_unsaturated else self
-
-    def align_pair(self, other: Color) -> tuple[Color, Color]:
-        aligned_self = self.align(other)
-        return aligned_self, other.align(aligned_self)
 
     @cached_property
     def as_sortable_tuple(self) -> tuple[float, float, float]:
@@ -226,7 +224,7 @@ class Color(HasNormalizeArgs):
     def as_rgb(self) -> RGB:
         return self._as_hsluv.as_rgb
 
-    def shifted(self, hue: float) -> Color:
+    def with_hue(self, hue: float) -> Color:
         return replace(self, hue=hue)
 
     def saturated(self, saturation: float) -> Color:
@@ -255,34 +253,119 @@ class Color(HasNormalizeArgs):
     def very_dark(self) -> Color:
         return self.shade(1 / 6)
 
-    def brighter(self, relative_amount: float = _INCREASE_FACTOR) -> Color:
-        return self.adjust(lightness=relative_amount)
+    def brighter(self, relative_amount: float = _INCREASE_STEP) -> Color:
+        return self + Color(hue=0, saturation=0, lightness=relative_amount)
 
     @cached_property
     def slightly_brighter(self) -> Color:
-        return self.brighter(_INCREASE_FACTOR**0.5)
+        return self.brighter(_INCREASE_STEP * 0.5)
 
     @cached_property
     def much_brighter(self) -> Color:
-        return self.brighter(_INCREASE_FACTOR**2)
+        return self.brighter(_INCREASE_STEP * 1.5)
 
-    def darker(self, relative_amount: float = _INCREASE_FACTOR) -> Color:
-        return self.brighter(1 / relative_amount)
+    def darker(self, relative_amount: float = _INCREASE_STEP) -> Color:
+        return self - Color(hue=0, saturation=0, lightness=relative_amount)
 
     @cached_property
     def slightly_darker(self) -> Color:
-        return self.darker(_INCREASE_FACTOR**0.5)
+        return self.darker(_INCREASE_STEP * 0.5)
 
     @cached_property
     def much_darker(self) -> Color:
-        return self.darker(_INCREASE_FACTOR**2)
+        return self.darker(_INCREASE_STEP * 1.5)
+
+    @cached_property
+    def has_ambiguous_hue(self) -> bool:
+        """
+        Determine if this color has a visually ambiguous hue.
+
+        This can occur in three cases:
+        1. With lightness set to 0, any color becomes black
+        2. With lightness set to 1, any color becomes white
+        3. With saturation set to 0, any color becomes grey
+        """
+        # We can use the fact here that all three cases will result in equal RGB values.
+        r, g, b = self.as_rgb
+        return r == g == b
+
+    def align_with(self, other: Color) -> tuple[Color, Color]:
+        """
+        Align two colors with each other, when their hues are visually ambiguous.
+
+        This can come out handy for producing gradients from grey values to colors
+        with consistent hue. Since the grey color could have any hue, the gradient
+        would show an unpredictable (and most likely unwanted) hue shift otherwise.
+
+        >>> Color(0.4, 1, 0.5).align_with(Color(0.6, 0.25, 0.75))
+        (HSLuv(144.00°, 100.00%,  50.00%), HSLuv(216.00°,  25.00%,  75.00%))
+
+        >>> Color(0.4, 0, 0.5).align_with(Color(0.6, 0.25, 0.75))
+        (HSLuv(216.00°,   0.00%,  50.00%), HSLuv(216.00°,  25.00%,  75.00%))
+        >>> Color(0.4, 1, 0.5).align_with(Color(0.6, 0, 0.75))
+        (HSLuv(144.00°, 100.00%,  50.00%), HSLuv(144.00°,   0.00%,  75.00%))
+        >>> Color(0.4, 0, 0.5).align_with(Color(0.6, 0, 0.75))
+        (HSLuv(216.00°,   0.00%,  50.00%), HSLuv(216.00°,   0.00%,  75.00%))
+
+        >>> Color(0.4, 1, 0).align_with(Color(0.6, 0.25, 0.75))
+        (HSLuv(216.00°, 100.00%,   0.00%), HSLuv(216.00°,  25.00%,  75.00%))
+        >>> Color(0.4, 1, 0.5).align_with(Color(0.6, 0.25, 0))
+        (HSLuv(144.00°, 100.00%,  50.00%), HSLuv(144.00°,  25.00%,   0.00%))
+        >>> Color(0.4, 1, 0).align_with(Color(0.6, 0.25, 0))
+        (HSLuv(216.00°, 100.00%,   0.00%), HSLuv(216.00°,  25.00%,   0.00%))
+
+        >>> Color(0.4, 1, 1).align_with(Color(0.6, 0.25, 0.75))
+        (HSLuv(216.00°, 100.00%, 100.00%), HSLuv(216.00°,  25.00%,  75.00%))
+        >>> Color(0.4, 1, 0.5).align_with(Color(0.6, 0.25, 1))
+        (HSLuv(144.00°, 100.00%,  50.00%), HSLuv(144.00°,  25.00%, 100.00%))
+        >>> Color(0.4, 1, 1).align_with(Color(0.6, 0.25, 1))
+        (HSLuv(216.00°, 100.00%, 100.00%), HSLuv(216.00°,  25.00%, 100.00%))
+        """
+        c, k = self, other
+        if c.has_ambiguous_hue:
+            c = c.with_hue(k.hue)
+        if k.has_ambiguous_hue:
+            k = k.with_hue(c.hue)
+        return c, k
 
     def blend(self, other: Color, amount: float = 0.5) -> Color:
-        return Color(
-            mapped_cyclic(amount, (self.hue, other.hue), period=1),
-            mapped(amount, (self.saturation, other.saturation)),
-            mapped(amount, (self.lightness, other.lightness)),
-        )
+        """
+        Blend two colors.
+
+        >>> Color(0.1, 1, 0.5).blend(Color(0.3, 0.25, 0.75), 0.25)
+        HSLuv( 54.00°,  81.25%,  56.25%)
+        >>> Color(0.1, 1, 0.5).blend(Color(0.9, 0.25, 0.75), 0.25)
+        HSLuv( 18.00°,  81.25%,  56.25%)
+        >>> Color(0.9, 1, 0.5).blend(Color(0.1, 0.25, 0.75), 0.25)
+        HSLuv(342.00°,  81.25%,  56.25%)
+
+        >>> Color(0.4, 1, 0.5).blend(Color(0.6, 0.25, 0.75), 0.25)
+        HSLuv(162.00°,  81.25%,  56.25%)
+
+        >>> Color(0.4, 0, 0.5).blend(Color(0.6, 0.25, 0.75), 0.25)
+        HSLuv(216.00°,   6.25%,  56.25%)
+        >>> Color(0.4, 1, 0.5).blend(Color(0.6, 0, 0.75), 0.25)
+        HSLuv(144.00°,  75.00%,  56.25%)
+        >>> Color(0.4, 0, 0.5).blend(Color(0.6, 0, 0.75), 0.25)
+        HSLuv(216.00°,   0.00%,  56.25%)
+
+        >>> Color(0.4, 1, 0).blend(Color(0.6, 0.25, 0.75), 0.25)
+        HSLuv(216.00°,  81.25%,  18.75%)
+        >>> Color(0.4, 1, 0.5).blend(Color(0.6, 0.25, 0), 0.25)
+        HSLuv(144.00°,  81.25%,  37.50%)
+        >>> Color(0.4, 1, 0).blend(Color(0.6, 0.25, 0), 0.25)
+        HSLuv(216.00°,  81.25%,   0.00%)
+
+        >>> Color(0.4, 1, 1).blend(Color(0.6, 0.25, 0.75), 0.25)
+        HSLuv(216.00°,  81.25%,  93.75%)
+        >>> Color(0.4, 1, 0.5).blend(Color(0.6, 0.25, 1), 0.25)
+        HSLuv(144.00°,  81.25%,  62.50%)
+        >>> Color(0.4, 1, 1).blend(Color(0.6, 0.25, 1), 0.25)
+        HSLuv(216.00°,  81.25%, 100.00%)
+        """
+        c, k = self.align_with(other)
+        hs, ss, ls = zip(c, k, strict=True)
+        return Color(mapped_cyclic(amount, hs), mapped(amount, ss), mapped(amount, ls))
 
     @cached_property
     def contrasting_shade(self) -> Color:
@@ -338,7 +421,7 @@ class Color(HasNormalizeArgs):
         ff0088 <-> 009583
         ff8800 <-> 00b8d1
         """
-        return self.adjust(hue=0.5)
+        return self.with_hue(self.hue + 0.5)
 
     @cached_property
     def contrasting_hue_pair(self) -> tuple[Color, Color]:

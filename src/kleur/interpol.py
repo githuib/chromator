@@ -53,9 +53,7 @@ class LogarithmicMapping(LinearMapping):
 
 
 class CyclicMapping(_MappingBounds):
-    def __init__(
-        self, start: float = 0, end: float = FULL_CIRCLE, period: float = FULL_CIRCLE
-    ) -> None:
+    def __init__(self, start: float = 0, end: float = 1, period: float = 1) -> None:
         self._period = period
         start, end = self._trim(start), self._trim(end)
 
@@ -105,7 +103,7 @@ def unmapped_log(
     return LogarithmicMapping(*bounds, base).position_of(n, inside=inside)
 
 
-def mapped_cyclic(f: float, bounds: _Bounds, *, period: float = FULL_CIRCLE) -> float:
+def mapped_cyclic(f: float, bounds: _Bounds, *, period: float = 1) -> float:
     return CyclicMapping(*bounds, period).value_at(f)
 
 

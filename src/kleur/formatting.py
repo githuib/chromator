@@ -159,7 +159,7 @@ class ColorHighlighter:
         # Go over each color property and highlight it if necessary.
         values = " ".join(
             Highlighter(k)(f" {s} ", enabled=p in highlighted)
-            for (s, k, p) in zip(c.prop_strings(), decomposed, iter(CP), strict=True)
+            for (s, k, p) in zip(c.prop_strings(), decomposed, CP, strict=True)
         )
         n, start, end = b = "HSLuv", "[", "]"
         if enable_bounds_highlights:

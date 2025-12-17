@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from kleur import Color, ColorHighlighter, Highlighter, blend_colors
 from kleur.interpol import LinearMapping, mapped
@@ -65,7 +65,7 @@ class LinesGeneratorTwoColors(LinesGenerator):
         super().__init__(args)
         self._dynamic_range = args.dynamic_range / 100
         c1, c2 = Color.from_hex(args.color1), Color.from_hex(args.color2)
-        self._dark, self._bright = sorted(c1.align_pair(c2))
+        self._dark, self._bright = sorted(c1.align_with(c2))
 
     def _comment_lines(self) -> Iterator[str]:
         yield "Based on:"
@@ -87,28 +87,32 @@ class LinesGeneratorTwoColors(LinesGenerator):
             The shades will interpolate (or extrapolate) between
             the darkest & brightest shades of the input colors
         """
+        old_colors = self._dark, self._bright
 
-        def dynamic_bound(c: Color, edge: Literal[0, 1]) -> Color:
-            return c.shade(mapped(self._dynamic_range, (c.lightness, edge)))
+        li_old = [c.lightness for c in old_colors]
+        sm_old = LinearMapping(*li_old)
 
-        dark_o, bright_o = self._dark, self._bright
-        dark_n, bright_n = (dynamic_bound(dark_o, 0), dynamic_bound(bright_o, 1))
-        shade_mapping = LinearMapping(dark_n.lightness, bright_n.lightness)
-        blend_ = blend_colors(dark_n, bright_n)
+        li_new = [mapped(self._dynamic_range, (li, e)) for e, li in enumerate(li_old)]
+        sm_new = LinearMapping(*li_new)
+
+        blend_old = blend_colors(*old_colors)
+        colors_l = [blend_old(sm_new.position_of(li)).shade(li) for li in li_old]
+        blend_new = blend_colors(*colors_l)
 
         def blend(lightness: float) -> Color:
-            return blend_(shade_mapping.position_of(lightness))
+            return blend_new(sm_old.position_of(lightness))
 
         for s in self._shades:
             yield blend(s), CP.NONE
 
         if self._include_input:
-            for old, new in zip((dark_o, bright_o), (dark_n, bright_n), strict=True):
-                if old.as_hex == new.as_hex:
-                    yield new, CP.ALL
+            colors_hs = [blend(li) for li in li_new]
+            for c_l, c_hs in zip(colors_l, colors_hs, strict=True):
+                if c_l.as_rgb == c_hs.as_rgb:
+                    yield c_l, CP.ALL
                 else:
-                    yield blend(old.lightness), CP.L
-                    yield new, CP.NO_L
+                    yield c_l, CP.L
+                    yield c_hs, CP.NO_L
 
 
 class CssArgsParser(ArgsParser):
