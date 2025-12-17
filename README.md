@@ -16,7 +16,13 @@ This work provided the fundaments to build this package on (and is the only depe
 pip install kleur
 ```
 
-## Usage
+## Library usage
+
+When used as a dependency the kleur package contains convenience wrappers around the [HSLuv Python API](https://pypi.org/project/hsluv/), as well as utilities for styling console ouput built on top of it.
+
+(API reference to be added)
+
+## Command line usage
 
 ### Preview a color theme
 
