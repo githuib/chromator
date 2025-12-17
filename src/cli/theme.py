@@ -28,10 +28,10 @@ if TYPE_CHECKING:
 
 
 COL_WIDTH = 8
-FIRST_COL = Colored(" ", bg=BLACK)
+LAST_COL = Colored(" ", bg=WHITE)
 
 
-def _percentage(s: float) -> str:
+def _perc(s: float) -> str:
     return f"{round(s * 100, 1):n}%"
 
 
@@ -54,7 +54,7 @@ class LinesGenerator:
             colors[name] = c(h)
 
         self._colors = dict(sorted(colors.items(), key=lambda i: i[1].hue))
-        self._last_length = max(len(n) for n in self._colors) + 6
+        self._label_length = max(len(n) for n in self._colors) + 6
         # Shades percentages are right above the first color, so let's give them a
         # contrasting hue. Furthermore, making them slightly brighter as the shade
         # increases will give them a more uniform appearance to the human eye.
@@ -64,25 +64,25 @@ class LinesGenerator:
         self._percentage_color = blend_colors(cp.shade(0.58), cp.shade(0.72))
 
     def _percentage_columns(self, v: float) -> Iterator[str]:
-        yield FIRST_COL
+        kv = self._percentage_color(0).saturated(v)
+        yield Colored(f"{_perc(v)} ".rjust(self._label_length), kv.shade(0.92), kv)
 
         for s in self._shades:
             k = self._percentage_color(s).saturated(v)
             yield Colored(" ", bg=k.shade(s))
-            yield Colored(_percentage(s).center(COL_WIDTH - 1), k)
+            yield Colored(_perc(s).center(COL_WIDTH - 1), k)
 
-        kv = self._percentage_color(1).saturated(v)
-        yield Colored(f"{_percentage(v)} ".rjust(self._last_length), kv.shade(0.94), kv)
+        yield Colored(" ", bg=WHITE)
 
     def _color_columns(self, name: str, color: Color) -> Iterable[str]:
-        yield FIRST_COL
+        hue = f"{color.hue * 360:3.0f}" if color.saturation else ""
+        yield Colored(f" {hue:>3} {name}".ljust(self._label_length), color, BLACK)
 
         for s in self._shades:
             k = color.shade(s)
             yield Highlighter(k)(k.as_hex.center(COL_WIDTH))
 
-        hue = f"{color.hue * 360:3.0f}" if color.saturation else ""
-        yield Colored(f" {hue:>3} {name}".ljust(self._last_length), color, WHITE)
+        yield Colored(" ", bg=WHITE)
 
     def _rows(self) -> Iterator[Iterable[str]]:
         yield []
