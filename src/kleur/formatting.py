@@ -2,7 +2,7 @@ import os
 import re
 import sys
 from functools import cache
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Literal, Self, overload
 
 from kleur import Color
 
@@ -136,11 +136,23 @@ class Highlighter:
     def __init__(self, color: Color) -> None:
         self._color = color
 
-    def __call__(self, s: str, *, inverted: bool = False, enabled: bool = True) -> str:
+    @overload
+    def __call__(
+        self, v: object, *, inverted: bool = False, enabled: Literal[True] = True
+    ) -> Colored: ...
+
+    @overload
+    def __call__(
+        self, v: object, *, inverted: bool = False, enabled: bool = True
+    ) -> str: ...
+
+    def __call__(
+        self, v: object, *, inverted: bool = False, enabled: bool = True
+    ) -> Colored | str:
         if not enabled:
-            return s
+            return str(v)
         c, k = self._color.contrasting_shade_pair
-        return Colored(s, *((c, k) if inverted else (k, c)))
+        return Colored(v, *((c, k) if inverted else (k, c)))
 
 
 CP = Color.Props

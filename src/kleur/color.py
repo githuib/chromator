@@ -238,20 +238,28 @@ class Color(HasNormalizeArgs):
             yield self.shade(step / n_intervals)
 
     @cached_property
-    def very_bright(self) -> Color:
-        return self.shade(5 / 6)
-
-    @cached_property
-    def bright(self) -> Color:
-        return self.shade(4 / 6)
+    def very_dark(self) -> Color:
+        return self.shade(1 / 8)
 
     @cached_property
     def dark(self) -> Color:
-        return self.shade(2 / 6)
+        return self.shade(2 / 8)
 
     @cached_property
-    def very_dark(self) -> Color:
-        return self.shade(1 / 6)
+    def slightly_dark(self) -> Color:
+        return self.shade(3 / 8)
+
+    @cached_property
+    def slightly_bright(self) -> Color:
+        return self.shade(5 / 8)
+
+    @cached_property
+    def bright(self) -> Color:
+        return self.shade(6 / 8)
+
+    @cached_property
+    def very_bright(self) -> Color:
+        return self.shade(7 / 8)
 
     def brighter(self, relative_amount: float = _INCREASE_STEP) -> Color:
         return self + Color(hue=0, saturation=0, lightness=relative_amount)
