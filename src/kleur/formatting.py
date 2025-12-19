@@ -125,6 +125,9 @@ class Colored[T](str):
         instance.value, instance.fg, instance.bg = (value, fg, bg)
         return instance
 
+    def __len__(self) -> int:
+        return len(str(self.value))
+
     def with_color(self, color: Color) -> Colored:
         return Colored(self.value, color, self.bg)
 
