@@ -1,4 +1,4 @@
-from kleur import Color
+from .color import Color
 
 
 def c(h: int) -> Color:
@@ -12,9 +12,9 @@ WHITE = GREY.shade(1)
 
 class Colors:
     """
-    Highly opinionated (though carefully selected) color theme.
+    Highly opinionated (though carefully selected) color palette.
 
-    Custom color themes can by specified by creating a very basic class
+    Custom color palettes can be specified by creating a very basic class
     that solely consists of a different set of hues (in degrees), for example:
     >>> from math import pi
     >>> class MyColors:
@@ -43,7 +43,7 @@ class Colors:
 
 
 class AltColors:
-    """Alternative color theme."""
+    """Alternative color palette."""
 
     red = c(10)
     orange = c(35)

@@ -1,6 +1,6 @@
 from .color import RGB, Color, blend_colors, normalize_rgb_hex
-from .formatting import Colored, ColorHighlighter, Highlighter
-from .themes import BLACK, GREY, WHITE, AltColors, Colors, c
+from .formatting import Colored, ColorHighlighter, ColorStr, Highlighter
+from .palettes import BLACK, GREY, WHITE, AltColors, Colors, c
 
 __all__ = [
     "BLACK",
@@ -10,6 +10,7 @@ __all__ = [
     "AltColors",
     "Color",
     "ColorHighlighter",
+    "ColorStr",
     "Colored",
     "Colors",
     "Highlighter",

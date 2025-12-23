@@ -1,32 +1,15 @@
 import os
-import re
 import sys
 from functools import cache
 from typing import TYPE_CHECKING, Literal, Self, overload
 
-from kleur import Color
+from .color import Color
+from .palettes import Colors
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from kleur import RGB
-
-ANSI_ESCAPE = "\x1b"
-_ANSI_STYLE_REGEX = re.compile(rf"{ANSI_ESCAPE}\[\d+(;\d+)*m")
-
-
-def ansi(s: str) -> str:
-    return f"{ANSI_ESCAPE}[{s}"
-
-
-def ansi_style(*values: int) -> str:
-    return ansi(f"{';'.join(str(v) for v in values)}m")
-
-
-LINE_UP = ansi("A")
-LINE_CLEAR = ansi("2K")
-
-RESET_STYLE = ansi_style(0)
+    from .color import RGB
 
 
 @cache
@@ -37,13 +20,26 @@ def has_colors() -> bool:
     return not no and (yes or maybe)
 
 
+type _StringStyler = Callable[[str], str]
+
+ANSI_ESCAPE = "\x1b"
+
+
+def _ansi(s: str) -> str:
+    return f"{ANSI_ESCAPE}[{s}"
+
+
+def _ansi_style(*values: int) -> str:
+    return _ansi(f"{';'.join(str(v) for v in values)}m")
+
+
+RESET_STYLE = _ansi_style(0)
+
+
 def _apply_ansi_style(s: str, *values: int) -> str:
     if values and has_colors():
-        return f"{ansi_style(*values)}{s}{RESET_STYLE}"
+        return f"{_ansi_style(*values)}{s}{RESET_STYLE}"
     return s
-
-
-type _StringStyler = Callable[[str], str]
 
 
 def _wrap_ansi_style(*values: int) -> _StringStyler:
@@ -51,10 +47,6 @@ def _wrap_ansi_style(*values: int) -> _StringStyler:
         return _apply_ansi_style(s, *values)
 
     return wrapper
-
-
-def strip_ansi_style(s: str) -> str:
-    return _ANSI_STYLE_REGEX.sub("", s)
 
 
 bold = _wrap_ansi_style(1)
@@ -91,9 +83,6 @@ light_magenta = _wrap_ansi_style(95)
 light_cyan = _wrap_ansi_style(96)
 white = _wrap_ansi_style(97)
 
-OK = green("✔")
-FAIL = red("✘")
-
 
 def color_8bit(fg: int = None, bg: int = None) -> _StringStyler:
     values = []
@@ -113,7 +102,7 @@ def color_rgb(fg: RGB = None, bg: RGB = None) -> _StringStyler:
     return _wrap_ansi_style(*values)
 
 
-class Colored[T](str):
+class ColorStr[T](str):
     value: T
     bg: Color | None
     fg: Color | None
@@ -128,11 +117,23 @@ class Colored[T](str):
     def __len__(self) -> int:
         return len(str(self.value))
 
-    def with_color(self, color: Color) -> Colored:
-        return Colored(self.value, color, self.bg)
+    def with_color(self, color: Color) -> ColorStr:
+        return ColorStr(self.value, color, self.bg)
 
-    def with_background(self, background: Color) -> Colored:
-        return Colored(self.value, self.fg, background)
+    def with_background(self, background: Color) -> ColorStr:
+        return ColorStr(self.value, self.fg, background)
+
+
+class Colored:
+    def __init__(self, fg: Color = None, bg: Color = None) -> None:
+        self._fg, self._bg = fg, bg
+
+    def __call__(self, v: object) -> ColorStr:
+        return ColorStr(v, self._fg, self._bg)
+
+
+OK = Colored(Colors.green)("✔")
+FAIL = Colored(Colors.red)("✘")
 
 
 class Highlighter:
@@ -142,7 +143,7 @@ class Highlighter:
     @overload
     def __call__(
         self, v: object, *, inverted: bool = False, enabled: Literal[True] = True
-    ) -> Colored: ...
+    ) -> ColorStr: ...
 
     @overload
     def __call__(
@@ -151,11 +152,11 @@ class Highlighter:
 
     def __call__(
         self, v: object, *, inverted: bool = False, enabled: bool = True
-    ) -> Colored | str:
+    ) -> ColorStr | str:
         if not enabled:
             return str(v)
         c, k = self._color.contrasting_shade_pair
-        return Colored(v, *((c, k) if inverted else (k, c)))
+        return Colored(*((c, k) if inverted else (k, c)))(v)
 
 
 CP = Color.Props

@@ -3,9 +3,8 @@ from enum import IntFlag, auto
 from functools import cached_property, total_ordering
 from typing import TYPE_CHECKING, NamedTuple
 
+from based_utils.interpol import mapped, mapped_cyclic, trim, trim_cyclic
 from hsluv import hex_to_hsluv, hsluv_to_hex, hsluv_to_rgb, rgb_to_hsluv
-
-from .interpol import mapped, mapped_cyclic, trim, trim_cyclic
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator

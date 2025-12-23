@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from kleur import Color, ColorHighlighter, Highlighter, blend_colors
-from kleur.interpol import LinearMapping, mapped
+from based_utils.cli import ArgsParser, check_integer_in_range, write_lines
+from based_utils.interpol import LinearMapping, mapped
 
-from .utils import ArgsParser, check_integer_in_range, print_lines
+from kleur import Color, ColorHighlighter, Highlighter, blend_colors
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -116,7 +116,7 @@ class LinesGeneratorTwoColors(LinesGenerator):
 
 
 class CssArgsParser(ArgsParser):
-    name = "css"
+    name = "shades"
 
     def _parse_args(self) -> None:
         self._parser.add_argument("-l", "--label", type=str, default="color")
@@ -137,4 +137,4 @@ class CssArgsParser(ArgsParser):
 
     def _run_command(self, args: Namespace) -> None:
         gen_cls = LinesGeneratorTwoColors if args.color2 else LinesGeneratorOneColor
-        print_lines(gen_cls(args).lines())
+        write_lines(gen_cls(args).lines())

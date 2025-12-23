@@ -1,16 +1,15 @@
 from typing import TYPE_CHECKING
 
-from kleur import BLACK, GREY, WHITE, AltColors, Color, Colored, Colors, Highlighter, c
-from kleur.interpol import LinearMapping
-
-from .utils import (
+from based_utils import get_class_vars, try_convert
+from based_utils.cli import (
     ArgsParser,
     check_integer_in_range,
-    get_class_vars,
     parse_key_value_pair,
-    print_lines,
-    try_convert,
+    write_lines,
 )
+from based_utils.interpol import LinearMapping
+
+from kleur import BLACK, GREY, WHITE, AltColors, Color, Colors, ColorStr, Highlighter, c
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -29,10 +28,10 @@ class LinesGenerator:
 
         colors: dict[str, Color] = {}
 
-        if args.merge_with_default_theme or not args.colors:
-            # Add colors from default theme.
-            theme_cls = AltColors if args.alt_default_theme else Colors
-            colors |= get_class_vars(theme_cls, Color)
+        if args.merge_with_default_palette or not args.colors:
+            # Add colors from default palette.
+            palette_cls = AltColors if args.alt_default_palette else Colors
+            colors |= get_class_vars(palette_cls, Color)
 
         # Add custom colors from args.
         for name, hue in args.colors:
@@ -45,7 +44,7 @@ class LinesGenerator:
         # contrasting hue. Furthermore, making them slightly brighter as the shade
         # increases will give them a more uniform appearance to the human eye.
         self._percentage_color = next(iter(self._colors.values())).contrasting_hue
-        # Values based on experimenting with themes differing in starting color.
+        # Values based on experimenting with palettes differing in starting color.
         # Overall this seems to work well, or at least to my eyes :)
         self._neutral_shade_lo, self._neutral_shade_hi = 0.6, 0.75
         self._shade_map = LinearMapping(self._neutral_shade_lo, self._neutral_shade_hi)
@@ -53,24 +52,24 @@ class LinesGenerator:
     def _percentage_columns(self, v: float) -> Iterator[str]:
         cp, sm = self._percentage_color.saturated(v), self._shade_map
         c0 = cp.shade(self._neutral_shade_lo)
-        yield Colored(f" {_perc(v)}".ljust(self._label_length), c0.brighter(), c0)
+        yield ColorStr(f" {_perc(v)}".ljust(self._label_length), c0.brighter(), c0)
 
         for s in self._shades:
-            yield Colored(" ", bg=cp.shade(s))
-            yield Colored(_perc(s).center(7), cp.shade(sm.value_at(s)))
+            yield ColorStr(" ", bg=cp.shade(s))
+            yield ColorStr(_perc(s).center(7), cp.shade(sm.value_at(s)))
 
-        yield Colored(" ", bg=WHITE)
+        yield ColorStr(" ", bg=WHITE)
 
     def _color_columns(self, name: str, color: Color) -> Iterable[str]:
         hue = f"{color.hue * 360:3.0f}" if color.saturation else ""
         c0 = color.shade(self._neutral_shade_lo)
-        yield Colored(f" {hue:>3} {name}".ljust(self._label_length), c0, BLACK)
+        yield ColorStr(f" {hue:>3} {name}".ljust(self._label_length), c0, BLACK)
 
         for s in self._shades:
             k = color.shade(s)
             yield Highlighter(k)(k.as_hex.center(8))
 
-        yield Colored(" ", bg=WHITE)
+        yield ColorStr(" ", bg=WHITE)
 
     def _rows(self) -> Iterator[Iterable[str]]:
         yield []
@@ -89,7 +88,7 @@ class LinesGenerator:
 
 
 class ThemeArgsParser(ArgsParser):
-    name = "theme"
+    name = "palette"
 
     def _parse_args(self) -> None:
         self._parser.add_argument(
@@ -101,10 +100,10 @@ class ThemeArgsParser(ArgsParser):
             default={},
         )
         self._parser.add_argument(
-            "-m", "--merge-with-default-theme", action="store_true", default=False
+            "-m", "--merge-with-default-palette", action="store_true", default=False
         )
         self._parser.add_argument(
-            "-a", "--alt-default-theme", action="store_true", default=False
+            "-a", "--alt-default-palette", action="store_true", default=False
         )
         self._parser.add_argument(
             "-s", "--number-of-shades", type=check_integer_in_range(1, 99), default=9
@@ -114,4 +113,4 @@ class ThemeArgsParser(ArgsParser):
         )
 
     def _run_command(self, args: Namespace) -> None:
-        print_lines(LinesGenerator(args).lines())
+        write_lines(LinesGenerator(args).lines())

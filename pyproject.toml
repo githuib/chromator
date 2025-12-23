@@ -21,6 +21,11 @@ dependencies = [
   "hsluv",
 ]
 
+[project.optional-dependencies]
+cli = [
+  "based-utils[cli]",
+]
+
 [dependency-groups]
 dev = [
   "mypy",
@@ -30,12 +35,16 @@ dev = [
   "ruff",
 ]
 
+#[tool.uv.sources]
+#based-utils = { path = "../based-utils", editable = true }
+#powerchord = { path = "../powerchord", editable = true }
+
 [project.urls]
 PyPI = "https://pypi.org/project/kleur/"
 Github = "https://github.com/githuib/kleur"
 
 [project.scripts]
-kleur = "cli:main"
+kleur = "kleur.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.3,<0.10.0"]
