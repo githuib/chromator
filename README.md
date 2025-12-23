@@ -10,25 +10,19 @@ This work provided the fundaments to build this package on (and is the only depe
 ![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/palette.png "kleur palette")
 ![alt text](https://github.com/githuib/kleur/raw/master/assets/screenshots/shades.png "kleur shades")
 
+## Installation
+
+```commandline
+pip install kleur
+```
+
 ## Library usage
 
 When used as a dependency the kleur package contains convenience wrappers around the [HSLuv Python API](https://pypi.org/project/hsluv/), as well as utilities for styling console ouput built on top of it.
 
 (API reference to be added)
 
-### Installation
-
-```commandline
-pip install kleur
-```
-
 ## Command line usage
-
-### Installation
-
-```commandline
-pip install kleur[cli]
-```
 
 ### Preview a color palette
 
