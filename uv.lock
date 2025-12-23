@@ -106,6 +106,7 @@ name = "kleur"
 version = "2.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "based-utils" },
     { name = "hsluv" },
 ]
 
@@ -125,6 +126,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "based-utils" },
     { name = "based-utils", extras = ["cli"], marker = "extra == 'cli'" },
     { name = "hsluv" },
 ]
