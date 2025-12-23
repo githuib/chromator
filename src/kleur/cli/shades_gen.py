@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from based_utils.cli import ArgsParser, check_integer_in_range, write_lines
+from based_utils.cli import ArgsParser, check_integer_in_range
+from based_utils.cli.args import CommandRunner
 from based_utils.interpol import LinearMapping, mapped
 
 from kleur import Color, ColorHighlighter, Highlighter, blend_colors
 
 if TYPE_CHECKING:
-    from argparse import Namespace
+    from argparse import ArgumentParser, Namespace
     from collections.abc import Iterator
 
 
@@ -18,7 +19,7 @@ def _input_comment(color: Color) -> str:
     return f"{Highlighter(color)(f' #{color.as_hex}; ')} {ColorHighlighter(color)()}"
 
 
-class LinesGenerator(ABC):
+class _CommandRunner(CommandRunner, ABC):
     def __init__(self, args: Namespace) -> None:
         self._label, self._include_input = (args.label, args.include_input_shades)
         ibw, ns = (args.include_black_and_white, args.number_of_shades + 1)
@@ -30,7 +31,7 @@ class LinesGenerator(ABC):
     @abstractmethod
     def _colors(self) -> Iterator[tuple[Color, CP]]: ...
 
-    def lines(self) -> Iterator[str]:
+    def run(self) -> Iterator[str]:
         yield "/*"
         yield from self._comment_lines()
         yield "*/"
@@ -44,7 +45,7 @@ class LinesGenerator(ABC):
             yield f"{css_var}/* {hl_c(hl_ps, enable_bounds_highlights=is_hl)} */"
 
 
-class LinesGeneratorOneColor(LinesGenerator):
+class RunnerOneColor(_CommandRunner):
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._input = Color.from_hex(args.color1)
@@ -60,7 +61,7 @@ class LinesGeneratorOneColor(LinesGenerator):
             yield self._input, CP.ALL
 
 
-class LinesGeneratorTwoColors(LinesGenerator):
+class RunnerTwoColors(_CommandRunner):
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         self._dynamic_range = args.dynamic_range / 100
@@ -115,26 +116,26 @@ class LinesGeneratorTwoColors(LinesGenerator):
                     yield c_hs, CP.NO_L
 
 
-class CssArgsParser(ArgsParser):
-    name = "shades"
+class ShadesGenerator(ArgsParser):
+    _name = "shades"
 
-    def _parse_args(self) -> None:
-        self._parser.add_argument("-l", "--label", type=str, default="color")
-        self._parser.add_argument("-c", "--color1", type=str, required=True)
-        self._parser.add_argument("-k", "--color2", type=str)
-        self._parser.add_argument(
+    def __init__(self, parser: ArgumentParser) -> None:
+        super().__init__(parser)
+        parser.add_argument("-l", "--label", type=str, default="color")
+        parser.add_argument("-c", "--color1", type=str, required=True)
+        parser.add_argument("-k", "--color2", type=str)
+        parser.add_argument(
             "-s", "--number-of-shades", type=check_integer_in_range(1, 99), default=19
         )
-        self._parser.add_argument(
+        parser.add_argument(
             "-b", "--include-black-and-white", action="store_true", default=False
         )
-        self._parser.add_argument(
+        parser.add_argument(
             "-i", "--include-input-shades", action="store_true", default=False
         )
-        self._parser.add_argument(
+        parser.add_argument(
             "-d", "--dynamic-range", type=check_integer_in_range(0, 100), default=0
         )
 
-    def _run_command(self, args: Namespace) -> None:
-        gen_cls = LinesGeneratorTwoColors if args.color2 else LinesGeneratorOneColor
-        write_lines(gen_cls(args).lines())
+    def _runner_cls(self, args: Namespace) -> type[CommandRunner]:
+        return RunnerTwoColors if args.color2 else RunnerOneColor

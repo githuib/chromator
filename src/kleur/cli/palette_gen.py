@@ -1,18 +1,14 @@
 from typing import TYPE_CHECKING
 
 from based_utils import get_class_vars, try_convert
-from based_utils.cli import (
-    ArgsParser,
-    check_integer_in_range,
-    parse_key_value_pair,
-    write_lines,
-)
+from based_utils.cli import ArgsParser, check_integer_in_range, parse_key_value_pair
+from based_utils.cli.args import CommandRunner
 from based_utils.interpol import LinearMapping
 
 from kleur import BLACK, GREY, WHITE, AltColors, Color, Colors, ColorStr, Highlighter, c
 
 if TYPE_CHECKING:
-    from argparse import Namespace
+    from argparse import ArgumentParser, Namespace
     from collections.abc import Iterable, Iterator
 
 
@@ -20,7 +16,7 @@ def _perc(s: float) -> str:
     return f"{round(s * 100, 1):n}%"
 
 
-class LinesGenerator:
+class _CommandRunner(CommandRunner):
     def __init__(self, args: Namespace) -> None:
         ns, nv = args.number_of_shades, args.number_of_vibrances
         self._shades = [s / (ns + 1) for s in range(1, ns + 1)]
@@ -82,16 +78,17 @@ class LinesGenerator:
                 yield self._color_columns(name, k.saturated(v))
         yield []
 
-    def lines(self) -> Iterator[str]:
+    def run(self) -> Iterator[str]:
         for columns in self._rows():
             yield "".join(columns)
 
 
-class ThemeArgsParser(ArgsParser):
-    name = "palette"
+class PaletteGenerator(ArgsParser):
+    _name = "palette"
 
-    def _parse_args(self) -> None:
-        self._parser.add_argument(
+    def __init__(self, parser: ArgumentParser) -> None:
+        super().__init__(parser)
+        parser.add_argument(
             "-c",
             "--colors",
             nargs="+",
@@ -99,18 +96,18 @@ class ThemeArgsParser(ArgsParser):
             type=parse_key_value_pair,
             default={},
         )
-        self._parser.add_argument(
+        parser.add_argument(
             "-m", "--merge-with-default-palette", action="store_true", default=False
         )
-        self._parser.add_argument(
+        parser.add_argument(
             "-a", "--alt-default-palette", action="store_true", default=False
         )
-        self._parser.add_argument(
+        parser.add_argument(
             "-s", "--number-of-shades", type=check_integer_in_range(1, 99), default=9
         )
-        self._parser.add_argument(
+        parser.add_argument(
             "-v", "--number-of-vibrances", type=check_integer_in_range(1, 99), default=2
         )
 
-    def _run_command(self, args: Namespace) -> None:
-        write_lines(LinesGenerator(args).lines())
+    def _runner_cls(self, _args: Namespace) -> type[CommandRunner]:
+        return _CommandRunner
