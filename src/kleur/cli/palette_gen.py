@@ -1,8 +1,13 @@
 from typing import TYPE_CHECKING
 
-from based_utils import get_class_vars, try_convert
-from based_utils.cli import ArgsParser, check_integer_in_range, parse_key_value_pair
-from based_utils.cli.args import CommandRunner
+from based_utils.class_utils import get_class_vars
+from based_utils.cli import (
+    ArgsParser,
+    CommandRunner,
+    check_integer_in_range,
+    parse_key_value_pair,
+)
+from based_utils.data import try_convert
 from based_utils.interpol import LinearMapping
 
 from kleur import BLACK, GREY, WHITE, AltColors, Color, Colors, ColorStr, Highlighter, c

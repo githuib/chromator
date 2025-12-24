@@ -3,6 +3,8 @@ import sys
 from functools import cache
 from typing import TYPE_CHECKING, Literal, Self, overload
 
+from based_utils.cli import apply_ansi_style
+
 from .color import Color
 from .palettes import Colors
 
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
 
 
 @cache
-def has_colors() -> bool:
+def _has_colors() -> bool:
     no = "NO_COLOR" in os.environ
     yes = "CLICOLOR_FORCE" in os.environ
     maybe = sys.stdout.isatty()
@@ -22,29 +24,10 @@ def has_colors() -> bool:
 
 type _StringStyler = Callable[[str], str]
 
-ANSI_ESCAPE = "\x1b"
-
-
-def _ansi(s: str) -> str:
-    return f"{ANSI_ESCAPE}[{s}"
-
-
-def _ansi_style(*values: int) -> str:
-    return _ansi(f"{';'.join(str(v) for v in values)}m")
-
-
-RESET_STYLE = _ansi_style(0)
-
-
-def _apply_ansi_style(s: str, *values: int) -> str:
-    if values and has_colors():
-        return f"{_ansi_style(*values)}{s}{RESET_STYLE}"
-    return s
-
 
 def _wrap_ansi_style(*values: int) -> _StringStyler:
     def wrapper(s: str) -> str:
-        return _apply_ansi_style(s, *values)
+        return apply_ansi_style(s, *values) if _has_colors() else s
 
     return wrapper
 
