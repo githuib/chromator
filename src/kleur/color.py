@@ -3,6 +3,7 @@ from enum import IntFlag, auto
 from functools import cached_property, total_ordering
 from typing import TYPE_CHECKING, NamedTuple
 
+from based_utils.class_utils import HasAttrConverters
 from based_utils.interpol import mapped, mapped_cyclic, trim, trim_cyclic
 from hsluv import hex_to_hsluv, hsluv_to_hex, hsluv_to_rgb, rgb_to_hsluv
 
@@ -11,22 +12,6 @@ if TYPE_CHECKING:
 
 _INCREASE_STEP = 0.2
 TINY_BIT = 10e-8
-
-
-class HasNormalizeArgs:
-    def _normalize_values(self, funcs: dict[str, Callable[[float], float]]) -> None:
-        """
-        Make sure all color values are in a valid range.
-
-        object.__setattr__() is one of the awkward options (*) we have,
-        when we want to set attributes in a frozen dataclass (which will raise a
-        FrozenInstanceError when its own __setattr__() or __delattr__() is invoked).
-
-        *) Another option could be to move the attributes to a super class and
-        call super().__init__() here.
-        """
-        for name, func in funcs.items():
-            object.__setattr__(self, name, func(getattr(self, name)))
 
 
 def normalize_rgb_hex(rgb_hex: str) -> str:
@@ -101,7 +86,7 @@ class _HSLuv(NamedTuple):
 
 @total_ordering
 @dataclass(frozen=True)
-class Color(HasNormalizeArgs):
+class Color(HasAttrConverters):
     class Props(IntFlag):
         H = auto()
         S = auto()
@@ -116,9 +101,7 @@ class Color(HasNormalizeArgs):
     lightness: float = 0.5  # 0 - 1 (ratio)
 
     def __post_init__(self) -> None:
-        self._normalize_values(
-            {"hue": trim_cyclic, "saturation": trim, "lightness": trim}
-        )
+        self._convert_attrs({"hue": trim_cyclic, "saturation": trim, "lightness": trim})
 
     def __repr__(self) -> str:
         sh, ss, sl = self.prop_strings()

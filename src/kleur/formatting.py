@@ -4,12 +4,15 @@ from functools import cache
 from typing import TYPE_CHECKING, Literal, Self, overload
 
 from based_utils.cli import apply_ansi_style
+from based_utils.data import ignore
 
 from .color import Color
 from .palettes import Colors
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from based_utils.cli.io import StringStyler
 
     from .color import RGB
 
@@ -25,11 +28,8 @@ def _has_colors() -> bool:
 type _StringStyler = Callable[[str], str]
 
 
-def _wrap_ansi_style(*values: int) -> _StringStyler:
-    def wrapper(s: str) -> str:
-        return apply_ansi_style(s, *values) if _has_colors() else s
-
-    return wrapper
+def _wrap_ansi_style(*values: int) -> StringStyler:
+    return apply_ansi_style(*values) if _has_colors() else ignore
 
 
 bold = _wrap_ansi_style(1)
