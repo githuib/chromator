@@ -3,7 +3,7 @@ from enum import IntFlag, auto
 from functools import cached_property, total_ordering
 from typing import TYPE_CHECKING, NamedTuple
 
-from based_utils.class_utils import HasAttrConverters
+from based_utils.class_utils import Modifier, WithAttrModifiers
 from based_utils.interpol import mapped, mapped_cyclic, trim, trim_cyclic
 from hsluv import hex_to_hsluv, hsluv_to_hex, hsluv_to_rgb, rgb_to_hsluv
 
@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
 _INCREASE_STEP = 0.2
-TINY_BIT = 10e-8
 
 
 def normalize_rgb_hex(rgb_hex: str) -> str:
@@ -86,7 +85,7 @@ class _HSLuv(NamedTuple):
 
 @total_ordering
 @dataclass(frozen=True)
-class Color(HasAttrConverters):
+class Color(WithAttrModifiers):
     class Props(IntFlag):
         H = auto()
         S = auto()
@@ -100,8 +99,9 @@ class Color(HasAttrConverters):
     saturation: float = 1  # 0 - 1 (ratio)
     lightness: float = 0.5  # 0 - 1 (ratio)
 
-    def __post_init__(self) -> None:
-        self._convert_attrs({"hue": trim_cyclic, "saturation": trim, "lightness": trim})
+    @property
+    def _attr_modifiers(self) -> dict[str, Modifier]:
+        return {"hue": trim_cyclic, "saturation": trim, "lightness": trim}
 
     def __repr__(self) -> str:
         sh, ss, sl = self.prop_strings()

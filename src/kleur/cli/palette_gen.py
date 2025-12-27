@@ -32,7 +32,7 @@ class _CommandRunner(CommandRunner):
         if args.merge_with_default_palette or not args.colors:
             # Add colors from default palette.
             palette_cls = AltColors if args.alt_default_palette else Colors
-            colors |= get_class_vars(palette_cls, Color)
+            colors |= get_class_vars(palette_cls, value_type=Color)
 
         # Add custom colors from args.
         for name, hue in args.colors:
